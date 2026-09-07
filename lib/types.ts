@@ -48,6 +48,14 @@ export interface InvestigationCategory {
 export type TaskType = 'email' | 'password' | 'data-classification'
 
 export interface DispatchItem {
+  assignmentId?: string
+  attemptId?: string
+  caseId?: number
+  taskCode?: string
+  priority?: 'HIGH' | 'MEDIUM' | 'LOW'
+  matchScore?: number
+  matchReason?: Record<string, unknown>
+  source?: 'database' | 'mock'
   id: string
   type: TaskType
   timestamp: number
@@ -61,7 +69,7 @@ export interface GameState {
   currentPasswordId: string | null
   currentDocumentId: string | null
   investigatedCategories: Set<string>
-  confidenceLevel: number
+  confidenceLevel?: number
   decision: 'legitimate' | 'phishing' | null
   day: number
   todaysTasksCompleted: number

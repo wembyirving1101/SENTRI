@@ -1,7 +1,7 @@
 'use client'
 
 import { Mail, Lock, Shield, Database, FileText, Clock, User, AlertCircle } from 'lucide-react'
-import { QueueItem } from '@/lib/types'
+import { DispatchItem as QueueItem, Email, Password, DataClassification } from '@/lib/types'
 import { mockEmails } from '@/lib/mockEmails'
 import { mockPasswords } from '@/lib/mockPasswords'
 import { mockDataClassifications } from '@/lib/mockDataClassification'
@@ -31,7 +31,7 @@ export default function TaskDetailsPanel({ selectedQueueItem }: TaskDetailsPanel
   }
 
   const getEmailDetails = () => {
-    const email = mockEmails.find(e => e.id === selectedQueueItem.id)
+    const email = selectedQueueItem.payload as Email
     if (!email) return null
     
     return (
@@ -73,7 +73,7 @@ export default function TaskDetailsPanel({ selectedQueueItem }: TaskDetailsPanel
   }
 
   const getPasswordDetails = () => {
-    const password = mockPasswords.find(p => p.id === selectedQueueItem.id)
+    const password = selectedQueueItem.payload as Password
     if (!password) return null
     
     return (
@@ -85,18 +85,18 @@ export default function TaskDetailsPanel({ selectedQueueItem }: TaskDetailsPanel
           <div className="space-y-3">
             <div>
               <label className="text-sm text-[#5a5a5a] font-semibold">Submitted by</label>
-              <p className="text-base text-[#000000] font-bold">{password.submittedBy}</p>
+              <p className="text-base text-[#000000] font-bold">{password.employee}</p>
             </div>
             <div>
               <label className="text-sm text-[#5a5a5a] font-semibold">Purpose</label>
-              <p className="text-base text-[#000000] font-semibold">{password.purpose}</p>
+              <p className="text-base text-[#000000] font-semibold">{password.department}</p>
             </div>
             <div>
               <label className="text-sm text-[#5a5a5a] font-semibold">Characteristics</label>
               <div className="flex flex-wrap gap-1 mt-1">
                 {password.characteristics.map((char, idx) => (
                   <span key={idx} className="bg-[#c1b5a8] text-xs px-2 py-1 rounded text-[#000000]">
-                    {char}
+                    {char.label}
                   </span>
                 ))}
               </div>
@@ -108,7 +108,7 @@ export default function TaskDetailsPanel({ selectedQueueItem }: TaskDetailsPanel
   }
 
   const getDataClassificationDetails = () => {
-    const doc = mockDataClassifications.find(d => d.id === selectedQueueItem.id)
+    const doc = selectedQueueItem.payload as DataClassification
     if (!doc) return null
     
     return (
@@ -120,7 +120,7 @@ export default function TaskDetailsPanel({ selectedQueueItem }: TaskDetailsPanel
           <div className="space-y-3">
             <div>
               <label className="text-sm text-[#5a5a5a] font-semibold">Document</label>
-              <p className="text-base text-[#000000] font-bold">{doc.name}</p>
+              <p className="text-base text-[#000000] font-bold">{doc.title}</p>
             </div>
             <div>
               <label className="text-sm text-[#5a5a5a] font-semibold">From</label>
@@ -132,12 +132,12 @@ export default function TaskDetailsPanel({ selectedQueueItem }: TaskDetailsPanel
             </div>
             <div>
               <label className="text-sm text-[#5a5a5a] font-semibold">Current Classification</label>
-              <p className="text-base text-[#000000] font-bold">{doc.currentClassification}</p>
+              <p className="text-base text-[#000000] font-bold">Awaiting your review</p>
             </div>
-            {doc.sharingInfo && (
+            {doc.shouldShareWith && (
               <div>
                 <label className="text-sm text-[#5a5a5a] font-semibold">Sharing With</label>
-                <p className="text-sm text-[#000000]">{doc.sharingInfo}</p>
+                <p className="text-sm text-[#000000]">{doc.shouldShareWith}</p>
               </div>
             )}
           </div>
@@ -152,8 +152,6 @@ export default function TaskDetailsPanel({ selectedQueueItem }: TaskDetailsPanel
         return <Mail size={20} className="text-accent" />
       case 'password':
         return <Lock size={20} className="text-accent" />
-      case 'password-strength':
-        return <Shield size={20} className="text-accent" />
       case 'data-classification':
         return <Database size={20} className="text-accent" />
       default:
@@ -167,8 +165,6 @@ export default function TaskDetailsPanel({ selectedQueueItem }: TaskDetailsPanel
         return 'Email Investigation'
       case 'password':
         return 'Password Review'
-      case 'password-strength':
-        return 'Password Strength'
       case 'data-classification':
         return 'Data Classification'
       default:

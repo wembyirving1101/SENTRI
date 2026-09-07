@@ -32,8 +32,14 @@ import DataClassificationDetailsPanel from '@/components/DataClassificationDetai
 import DeskUI from '@/components/DeskUI'
 import ContactModal from '@/components/ContactModal'
 import SettingsModal from '@/components/SettingsModal'
+import { fetchPlayerProfile, requestPersonalizedTask, submitTaskDecision } from '@/lib/sentricolApi'
+import { DispatchItem } from '@/lib/types'
 
 export default function Home() {
+  const demoUserCode = process.env.NEXT_PUBLIC_DEMO_USER_CODE ?? 'usr_0001'
+  const [connectionError, setConnectionError] = useState<string | null>(null)
+  const savingRef = useRef(false)
+  const pendingSave = useRef<Promise<unknown>>(Promise.resolve())
   const playCorrectSound = useCorrectAnswerSound()
   const playWrongSound = useWrongAnswerSound()
   const playTaskNotificationSound = useTaskNotificationSound()
@@ -92,7 +98,7 @@ export default function Home() {
   const demoScenarioIndexRef = useRef(0)
   const [investigationPerformance, setInvestigationPerformance] = useState(createInitialInvestigationPerformance)
 
-  const createNextDispatchItem = () => {
+  const createMockDispatchItem = (): DispatchItem | null => {
     const fixedDemoIds = ['email-2', 'email-1', 'email-4']
     let email: Email | null = null
 
@@ -107,7 +113,7 @@ export default function Home() {
       const lastIncidentId = Array.from(usedIncidentsRef.current).at(-1)
       usedIncidentsRef.current.clear()
       email = selectAdaptiveEmail(mockEmails, investigationPerformance, usedIncidentsRef.current)
-      if (email?.id === lastIncidentId) {
+      if (email && email.id === lastIncidentId) {
         usedIncidentsRef.current.add(email.id)
         email = selectAdaptiveEmail(mockEmails, investigationPerformance, usedIncidentsRef.current)
       }
@@ -117,6 +123,36 @@ export default function Home() {
     usedIncidentsRef.current.add(email.id)
     return { type: 'email' as const, id: email.id, timestamp: Date.now(), payload: email }
   }
+
+  const createNextDispatchItem = async (): Promise<DispatchItem | null> => {
+    await pendingSave.current
+    try {
+      const item = await requestPersonalizedTask(demoUserCode)
+      setConnectionError(null)
+      return item
+    } catch (error) {
+      setConnectionError(error instanceof Error ? error.message : 'Unable to load the next task')
+      if (process.env.NEXT_PUBLIC_ALLOW_MOCK_FALLBACK === 'true') return createMockDispatchItem()
+      throw error
+    }
+  }
+
+  const saveDecision = (id: string | null, decision: string, categories: string[] = [], attemptNumber = 1) => {
+    const item = gameState.dispatchQueue.find((entry) => entry.id === id)
+    if (!item?.attemptId) return
+    pendingSave.current = submitTaskDecision({ attemptId: item.attemptId, decision, investigatedCategories: categories, attemptNumber })
+      .then((result) => {
+        if (result) setGameState((prev) => ({ ...prev, graduationProgress: result.graduationPercentage }))
+        setConnectionError(null)
+      })
+    void pendingSave.current.catch(() => setConnectionError('Your answer could not be saved. Refresh to resume this task.'))
+  }
+
+  useEffect(() => {
+    void fetchPlayerProfile(demoUserCode).then((profile) => {
+      setGameState((prev) => ({ ...prev, graduationProgress: profile.graduationPercentage }))
+    }).catch((error) => setConnectionError(error.message))
+  }, [demoUserCode])
 
   // Update time every minute (client-side only to avoid hydration mismatch)
   useEffect(() => {
@@ -133,7 +169,10 @@ export default function Home() {
 
   // Seed exactly one task on load. New tasks are created only after completion.
   useEffect(() => {
-    const nextTask = createNextDispatchItem()
+    let cancelled = false
+    void (async () => {
+    const nextTask = await createNextDispatchItem()
+    if (cancelled) return
     if (!nextTask) return
 
     setGameState((prev) => ({
@@ -145,6 +184,8 @@ export default function Home() {
       currentPasswordId: nextTask.type === 'password' ? nextTask.id : null,
       currentDocumentId: nextTask.type === 'data-classification' ? nextTask.id : null,
     }))
+    })().catch(() => {})
+    return () => { cancelled = true }
   }, [])
 
   // Auto-select first available task when tasks are added or task type changes
@@ -266,7 +307,8 @@ export default function Home() {
     const checklistMatches = suspicious.size === checked.size && [...suspicious].every((id) => checked.has(id))
     const decisionMatches = (decision === 'phishing' && !currentEmail.isLegitimate) ||
       (decision === 'legitimate' && currentEmail.isLegitimate)
-    const isCorrect = decisionMatches && checklistMatches
+    const hasChecklist = currentEmail.requiredInvestigationCategories !== undefined || currentEmail.investigationStates !== undefined
+    const isCorrect = decisionMatches && (!hasChecklist || checklistMatches)
     const attemptNumber = isCorrect ? emailAttempt + 1 : Math.min(4, emailAttempt + 1)
     const progressIncrease = isCorrect ? (attemptNumber === 1 ? 5 : attemptNumber === 2 ? 2 : 0) : attemptNumber >= 4 ? -1 : 0
     const nextPerformance = updateInvestigationPerformance(
@@ -294,15 +336,19 @@ export default function Home() {
     setLastDecision(decision)
     setShowDecisionModal(false)
     setShowFeedback(true)
+    if (isCorrect || attemptNumber >= 4) saveDecision(gameState.currentEmailId, decision, [...checked], attemptNumber)
   }
 
-  const handleContinueAfterFeedback = () => {
+  const handleContinueAfterFeedback = async () => {
     const shouldRetry = !lastEmailCorrect && lastEmailAttemptNumber < 4
 
+    if (shouldRetry) { setShowFeedback(false); setLastDecision(null); return }
+    if (savingRef.current) return
+    savingRef.current = true
+    let nextTask: DispatchItem | null
+    try { nextTask = await createNextDispatchItem() } catch { return } finally { savingRef.current = false }
     setShowFeedback(false)
     setLastDecision(null)
-
-    if (shouldRetry) return
 
     setEmailAttempt(0)
     setLastEmailAttemptNumber(0)
@@ -311,7 +357,6 @@ export default function Home() {
     
     // Move to the next case after a correct answer or the fourth wrong attempt
     const completedEmailId = gameState.currentEmailId
-    const nextTask = createNextDispatchItem()
     if (nextTask) playTaskNotificationSound()
     setGameState((prev) => ({
       ...prev,
@@ -339,7 +384,8 @@ export default function Home() {
 
   const handlePasswordDecision = (decision: 'approve' | 'revision' | 'reject') => {
     let progressIncrease = 0
-    const currentPassword = mockPasswords.find((p) => p.id === gameState.currentPasswordId)
+    const currentPassword = gameState.dispatchQueue.find((p) => p.id === gameState.currentPasswordId)?.payload as Password | undefined
+    if (!currentPassword) return
     
     if (currentPassword) {
       const isCorrect = decision === currentPassword.correctDecision
@@ -353,6 +399,7 @@ export default function Home() {
     
     setLastPasswordDecision(decision)
     setShowPasswordFeedback(true)
+    saveDecision(gameState.currentPasswordId, decision, [...checkedPasswordCharacteristics])
     
     // Update progress immediately
     setGameState((prev) => ({
@@ -361,12 +408,15 @@ export default function Home() {
     }))
   }
 
-  const handleContinueAfterPasswordFeedback = () => {
+  const handleContinueAfterPasswordFeedback = async () => {
+    if (savingRef.current) return
+    savingRef.current = true
+    let nextTask: DispatchItem | null
+    try { nextTask = await createNextDispatchItem() } catch { return } finally { savingRef.current = false }
     setShowPasswordFeedback(false)
     setLastPasswordDecision(null)
     setCheckedPasswordCharacteristics(new Set())
     
-    const nextTask = createNextDispatchItem()
     if (nextTask) playTaskNotificationSound()
     setGameState((prev) => ({
       ...prev,
@@ -382,7 +432,8 @@ export default function Home() {
 
   const handleDataClassification = (classification: 'public' | 'internal' | 'confidential' | 'restricted') => {
     let progressIncrease = 0
-    const currentDocument = mockDataClassifications.find((d) => d.id === gameState.currentDocumentId)
+    const currentDocument = gameState.dispatchQueue.find((d) => d.id === gameState.currentDocumentId)?.payload as DataClassification | undefined
+    if (!currentDocument) return
     
     if (currentDocument) {
       const isCorrect = classification === currentDocument.correctClassification
@@ -396,6 +447,7 @@ export default function Home() {
     
     setLastDataClassificationDecision(classification)
     setShowDataClassificationFeedback(true)
+    saveDecision(gameState.currentDocumentId, classification)
     
     // Update progress immediately
     setGameState((prev) => ({
@@ -404,11 +456,14 @@ export default function Home() {
     }))
   }
 
-  const handleContinueAfterDataClassificationFeedback = () => {
+  const handleContinueAfterDataClassificationFeedback = async () => {
+    if (savingRef.current) return
+    savingRef.current = true
+    let nextTask: DispatchItem | null
+    try { nextTask = await createNextDispatchItem() } catch { return } finally { savingRef.current = false }
     setShowDataClassificationFeedback(false)
     setLastDataClassificationDecision(null)
     
-    const nextTask = createNextDispatchItem()
     if (nextTask) playTaskNotificationSound()
     setGameState((prev) => ({
       ...prev,
@@ -430,7 +485,9 @@ export default function Home() {
     setShowDispatchQueue(false)
   }
 
-  const handleEndDay = () => {
+  const handleEndDay = async () => {
+    let nextTask: DispatchItem | null
+    try { nextTask = await createNextDispatchItem() } catch { return }
     console.log('[v0] End Day triggered')
     
     // Reset daily state while preserving graduation progress
@@ -438,11 +495,12 @@ export default function Home() {
       ...prev,
       day: prev.day + 1,
       todaysTasksCompleted: 0,
-      tasksGeneratedToday: 0,
-      dispatchQueue: [],
-      currentEmailId: 'email-1',
-      currentPasswordId: 'pwd-1',
-      currentDocumentId: 'doc-1',
+      tasksGeneratedToday: nextTask ? 1 : 0,
+      dispatchQueue: nextTask ? [nextTask] : [],
+      currentTaskType: nextTask?.type ?? 'email',
+      currentEmailId: nextTask?.type === 'email' ? nextTask.id : null,
+      currentPasswordId: nextTask?.type === 'password' ? nextTask.id : null,
+      currentDocumentId: nextTask?.type === 'data-classification' ? nextTask.id : null,
       investigatedCategories: new Set(),
       decision: null,
     }))
@@ -471,6 +529,9 @@ export default function Home() {
     setCheckedPasswordCharacteristics(new Set())
     
     console.log('[v0] New day started')
+    setEmailAttempt(0)
+    setLastEmailAttemptNumber(0)
+    setLastEmailCorrect(false)
   }
 
   return (
@@ -479,6 +540,7 @@ export default function Home() {
       style={{ height: aspectRatio === '16:9' ? '1080px' : '1200px' }}
     >
       {/* Header - Fixed height */}
+      {connectionError && <div role="alert" className="bg-destructive p-3 text-white">{connectionError}</div>}
       <Header 
         currentTime={displayTime} 
         graduationProgress={gameState.graduationProgress}
@@ -502,7 +564,6 @@ export default function Home() {
           <button
             onClick={() => {
               setShowDispatchQueue(true)
-              setGameState(prev => ({ ...prev, currentTaskType: null }))
             }}
             className={`py-3 px-4 rounded font-bold text-base transition-colors uppercase tracking-wider flex-shrink-0 border ${
               showDispatchQueue
@@ -558,7 +619,6 @@ export default function Home() {
                   .find((item) => item.id === gameState.currentDocumentId && item.type === 'data-classification')
                   ?.payload as DataClassification | undefined
               }
-              onClassify={handleDataClassification}
             />
           ) : null}
         </div>

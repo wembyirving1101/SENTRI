@@ -1,0 +1,23 @@
+{
+  "id": "email_hr_001_case_1",
+  "from": "Payroll Benefits Team",
+  "senderDomain": "benefits@company-payroll-support.com",
+  "to": "hr.staff@company.com",
+  "subject": "Urgent: Employee payroll profile verification",
+  "body": "Hello HR Team,\n\nWe are finalizing this month's payroll migration. Please verify the employee payroll profile using the secure link below within two hours to avoid delayed payments.\n\nhttp://company-payroll-support.com/verify\n\nPayroll Benefits Team",
+  "timestamp": "09:15 AM",
+  "attachments": [],
+  "isLegitimate": false,
+  "threat": "phishing",
+  "clues": {
+    "senderProfile": "The sender uses company-payroll-support.com instead of the official company domain.",
+    "linkDetails": [
+      "The link uses HTTP instead of HTTPS.",
+      "The destination domain is external and imitates a payroll support portal."
+    ],
+    "attachmentAnalysis": "There are no attachments; the credential-harvesting link is the primary attack path.",
+    "languageAnalysis": "The two-hour deadline creates artificial urgency.",
+    "contextAnalysis": "Payroll migration requests should be announced through an approved internal channel.",
+    "requestAnalysis": "The message asks HR staff to verify employee payroll information on an external site."
+  }
+}

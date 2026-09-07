@@ -1,0 +1,39 @@
+{
+  "id": "email_hr_001",
+  "type": "email",
+  "difficulty": 1,
+  "phisingScore": 67,
+  "targetDepartment": ["HR"],
+  "targetRank": ["Staff"],
+  "knowledgeTags": {
+    "email": 0.0,
+    "senderVerification": 0.0,
+    "urlInspection": 0.0,
+    "attachmentSafety": 0.0,
+    "domainAwareness": 0.0,
+    "spoofing": 0.0,
+    "credentialProtection": 0.0,
+    "mfa": 0.0,
+    "dataHandling": 0.0,
+    "financialVerification": 0.0,
+    "socialEngineering": 0.0
+  },
+  "behaviorTags": {
+    "authority": 0.0,
+    "urgency": 0.0,
+    "fear": 0.0,
+    "curiosity": 0.0,
+    "greed": 0.0,
+    "helpfulness": 0.0,
+    "scarcity": 0.0,
+    "trust": 0.0,
+    "familiarity": 0.0,
+    "reciprocity": 0.0
+  },
+  "complexity": {
+    "technical": 1,
+    "social": 1,
+    "evidence": 1,
+    "timePressure": 1
+  }
+}

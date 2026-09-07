@@ -1,4 +1,4 @@
-import { Mail } from 'lucide-react'
+import { Mail, Lock, FileText } from 'lucide-react'
 import { borderVariants } from '@/lib/borderVariants'
 import { cn } from '@/lib/utils'
 import { useClickSound } from '@/lib/useClickSound'
@@ -15,6 +15,16 @@ export default function TasksPanel({ currentTaskType, onSelectTask, dispatchQueu
   
   const emailCount = dispatchQueue.filter((item) => item.type === 'email').length
   const tasks = [
+    {
+      id: 'password', icon: Lock, label: 'Password Review',
+      active: currentTaskType === 'password',
+      count: dispatchQueue.filter((item) => item.type === 'password').length,
+    },
+    {
+      id: 'data-classification', icon: FileText, label: 'Data Classification',
+      active: currentTaskType === 'data-classification',
+      count: dispatchQueue.filter((item) => item.type === 'data-classification').length,
+    },
     {
       id: 'email',
       icon: Mail,

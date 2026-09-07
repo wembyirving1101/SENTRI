@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Mail, Lock, Shield, Database } from 'lucide-react'
-import { QueueItem } from '@/lib/types'
+import { DispatchItem as QueueItem, Email, DataClassification } from '@/lib/types'
 import { mockEmails } from '@/lib/mockEmails'
 import { mockPasswords } from '@/lib/mockPasswords'
 import { mockDataClassifications } from '@/lib/mockDataClassification'
@@ -23,7 +23,6 @@ export default function DispatchQueueView({ queue, selectedQueueId, onSelectQueu
     { id: 'all', label: 'ALL', count: queue.length },
     { id: 'email', label: 'EMAIL', count: queue.filter(q => q.type === 'email').length },
     { id: 'password', label: 'PASSWORD', count: queue.filter(q => q.type === 'password').length },
-    { id: 'strength', label: 'STRENGTH', count: queue.filter(q => q.type === 'password-strength').length },
     { id: 'data', label: 'DATA', count: queue.filter(q => q.type === 'data-classification').length },
   ]
 
@@ -31,7 +30,6 @@ export default function DispatchQueueView({ queue, selectedQueueId, onSelectQueu
     if (activeTab === 'all') return queue
     if (activeTab === 'email') return queue.filter(q => q.type === 'email')
     if (activeTab === 'password') return queue.filter(q => q.type === 'password')
-    if (activeTab === 'strength') return queue.filter(q => q.type === 'password-strength')
     if (activeTab === 'data') return queue.filter(q => q.type === 'data-classification')
     return queue
   }
@@ -53,25 +51,23 @@ export default function DispatchQueueView({ queue, selectedQueueId, onSelectQueu
 
   const getTaskDescription = (queueItem: QueueItem): string => {
     if (queueItem.type === 'email') {
-      const email = mockEmails.find(e => e.id === queueItem.id)
+      const email = queueItem.payload as Email
       return email?.subject || 'Unknown email'
     } else if (queueItem.type === 'password') {
       return 'New password submission'
-    } else if (queueItem.type === 'password-strength') {
-      return 'Password strength check'
     } else if (queueItem.type === 'data-classification') {
-      const doc = mockDataClassifications.find(d => d.id === queueItem.id)
-      return doc?.name || 'Unknown document'
+      const doc = queueItem.payload as DataClassification
+      return doc?.title || 'Unknown document'
     }
     return 'Unknown task'
   }
 
   const getTaskSource = (queueItem: QueueItem): string => {
     if (queueItem.type === 'email') {
-      const email = mockEmails.find(e => e.id === queueItem.id)
+      const email = queueItem.payload as Email
       return email?.from || 'Unknown'
     } else if (queueItem.type === 'data-classification') {
-      const doc = mockDataClassifications.find(d => d.id === queueItem.id)
+      const doc = queueItem.payload as DataClassification
       return doc?.from || 'Unknown'
     }
     return 'System'
@@ -79,7 +75,7 @@ export default function DispatchQueueView({ queue, selectedQueueId, onSelectQueu
 
   const getTaskTime = (queueItem: QueueItem): string => {
     if (queueItem.type === 'email') {
-      const email = mockEmails.find(e => e.id === queueItem.id)
+      const email = queueItem.payload as Email
       return email?.timestamp || '--:--'
     }
     return 'Now'
@@ -88,10 +84,10 @@ export default function DispatchQueueView({ queue, selectedQueueId, onSelectQueu
   const getPriority = (queueItem: QueueItem): 'HIGH' | 'MEDIUM' | 'LOW' => {
     if (queueItem.type === 'email') {
       const email = mockEmails.find(e => e.id === queueItem.id)
-      return email?.priority || 'MEDIUM'
+      return queueItem.priority || 'MEDIUM'
     } else if (queueItem.type === 'data-classification') {
       const doc = mockDataClassifications.find(d => d.id === queueItem.id)
-      return doc?.priority || 'MEDIUM'
+      return queueItem.priority || 'MEDIUM'
     }
     return 'MEDIUM'
   }
