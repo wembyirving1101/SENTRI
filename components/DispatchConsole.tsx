@@ -7,7 +7,7 @@ import { mockEmails, verificationContacts } from '@/lib/mockEmails'
 import { mockPasswords } from '@/lib/mockPasswords'
 import { mockDataClassifications } from '@/lib/mockDataClassification'
 import { GameState, InvestigationCategory, Email, Password, DataClassification } from '@/lib/types'
-import { createInitialInvestigationPerformance, selectAdaptiveEmail, updateInvestigationPerformance } from '@/lib/gameHelpers'
+import { createInitialInvestigationPerformance, selectAdaptiveEmail, getRandomDelay, updateInvestigationPerformance } from '@/lib/gameHelpers'
 import { useCorrectAnswerSound } from '@/lib/useCorrectAnswerSound'
 import { useWrongAnswerSound } from '@/lib/useWrongAnswerSound'
 import { useTaskNotificationSound } from '@/lib/useTaskNotificationSound'
@@ -107,24 +107,40 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
   const demoScenarioIndexRef = useRef(0)
   const [investigationPerformance, setInvestigationPerformance] = useState(createInitialInvestigationPerformance)
 
+  const generationRef = useRef(false)
+  const gameStateRef = useRef(gameState)
+  gameStateRef.current = gameState
+  const performanceRef = useRef(investigationPerformance)
+  performanceRef.current = investigationPerformance
+  const knownAssignmentsRef = useRef<Set<string>>(new Set())
+  const taskSequence = ['email', 'email', 'data-classification', 'email', 'email', 'password', 'email', 'data-classification', 'email', 'email'] as const
+
   const createMockDispatchItem = (): DispatchItem | null => {
+    const type = taskSequence[gameStateRef.current.tasksGeneratedToday % taskSequence.length]
+    if (type !== 'email') {
+      const catalog = type === 'password' ? mockPasswords : mockDataClassifications
+      const available = catalog.filter(item => !gameStateRef.current.dispatchQueue.some(active => active.id === item.id))
+      const payload = available[Math.floor(Math.random() * available.length)]
+      return payload ? { type, id: payload.id, timestamp: Date.now(), payload } : null
+    }
+    const availableEmails = mockEmails.filter(email => !gameStateRef.current.dispatchQueue.some(item => item.id === email.id))
     const fixedDemoIds = ['email-2', 'email-1', 'email-4']
     let email: Email | null = null
 
     if (demoScenarioIndexRef.current < fixedDemoIds.length) {
-      email = mockEmails.find((candidate) => candidate.id === fixedDemoIds[demoScenarioIndexRef.current]) ?? null
+      email = availableEmails.find((candidate) => candidate.id === fixedDemoIds[demoScenarioIndexRef.current]) ?? null
       demoScenarioIndexRef.current += 1
     } else {
-      email = selectAdaptiveEmail(mockEmails, investigationPerformance, usedIncidentsRef.current)
+      email = selectAdaptiveEmail(availableEmails, performanceRef.current, usedIncidentsRef.current)
     }
 
     if (!email) {
       const lastIncidentId = Array.from(usedIncidentsRef.current).at(-1)
       usedIncidentsRef.current.clear()
-      email = selectAdaptiveEmail(mockEmails, investigationPerformance, usedIncidentsRef.current)
+      email = selectAdaptiveEmail(availableEmails, performanceRef.current, usedIncidentsRef.current)
       if (email && email.id === lastIncidentId) {
         usedIncidentsRef.current.add(email.id)
-        email = selectAdaptiveEmail(mockEmails, investigationPerformance, usedIncidentsRef.current)
+        email = selectAdaptiveEmail(availableEmails, performanceRef.current, usedIncidentsRef.current)
       }
     }
 
@@ -138,10 +154,18 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
     setIsLoadingTask(true)
     try {
       await pendingSave.current
-      const item = await requestPersonalizedTask(demoUserCode)
+      const item = await requestPersonalizedTask(demoUserCode, {
+        taskType: taskSequence[gameStateRef.current.tasksGeneratedToday % taskSequence.length],
+        knownAssignmentIds: [...knownAssignmentsRef.current],
+      })
       setConnectionError(null)
       return item
     } catch (error) {
+      // Use the built-in catalog when the database has no eligible case of this type.
+      if (error instanceof Error && 'status' in error && error.status === 404) {
+        setConnectionError(null)
+        return createMockDispatchItem()
+      }
       setConnectionError(error instanceof Error ? error.message : 'Unable to load the next task')
       if (process.env.NEXT_PUBLIC_ALLOW_MOCK_FALLBACK === 'true') return createMockDispatchItem()
       throw error
@@ -181,27 +205,59 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
     return () => clearInterval(interval)
   }, [])
 
-  // Seed exactly one task on load. New tasks are created only after completion.
+  // Keep tasks arriving while the player works, up to 20 per day.
   useEffect(() => {
     if (designPreview) return
     let cancelled = false
-    void (async () => {
-    const nextTask = await createNextDispatchItem()
-    if (cancelled) return
-    if (!nextTask) return
+    let timer: ReturnType<typeof setTimeout>
+    const generate = async () => {
+      if (cancelled) return
+      if (!generationRef.current && gameStateRef.current.tasksGeneratedToday < 20) {
+        generationRef.current = true
+        try {
+          const nextTask = await createNextDispatchItem()
+          if (!cancelled && nextTask) {
+            if (nextTask.assignmentId) knownAssignmentsRef.current.add(nextTask.assignmentId)
+            setGameState(prev => {
+              if (prev.dispatchQueue.some(item => item.id === nextTask.id)) return prev
+              const empty = prev.dispatchQueue.length === 0
+              return {
+                ...prev,
+                tasksGeneratedToday: prev.tasksGeneratedToday + 1,
+                dispatchQueue: [...prev.dispatchQueue, nextTask],
+                ...(empty ? {
+                  currentTaskType: nextTask.type,
+                  currentEmailId: nextTask.type === 'email' ? nextTask.id : null,
+                  currentPasswordId: nextTask.type === 'password' ? nextTask.id : null,
+                  currentDocumentId: nextTask.type === 'data-classification' ? nextTask.id : null,
+                } : {}),
+              }
+            })
+            playTaskNotificationSound()
+          }
+        } catch { /* Keep the queue usable and retry on the next interval. */ }
+        finally { generationRef.current = false }
+      }
+      if (!cancelled) timer = setTimeout(generate, getRandomDelay())
+    }
+    void generate()
+    return () => { cancelled = true; clearTimeout(timer) }
+  }, [designPreview])
 
-    setGameState((prev) => ({
-      ...prev,
-      currentTaskType: nextTask.type,
-      tasksGeneratedToday: 1,
-      dispatchQueue: [nextTask],
-      currentEmailId: nextTask.type === 'email' ? nextTask.id : null,
-      currentPasswordId: nextTask.type === 'password' ? nextTask.id : null,
-      currentDocumentId: nextTask.type === 'data-classification' ? nextTask.id : null,
-    }))
-    })().catch(() => {})
-    return () => { cancelled = true }
-  }, [])
+  const completeQueuedTask = (id: string | null) => {
+    setGameState(prev => {
+      const queue = prev.dispatchQueue.filter(item => item.id !== id)
+      const next = queue[0]
+      return { ...prev, dispatchQueue: queue,
+        todaysTasksCompleted: prev.todaysTasksCompleted + 1,
+        currentTaskType: next?.type ?? prev.currentTaskType,
+        currentEmailId: next?.type === 'email' ? next.id : null,
+        currentPasswordId: next?.type === 'password' ? next.id : null,
+        currentDocumentId: next?.type === 'data-classification' ? next.id : null,
+      }
+    })
+    setShowDispatchQueue(true)
+  }
 
   useEffect(() => {
     setSelectedQueueItemId(current => gameState.dispatchQueue.some(item => item.id === current)
@@ -374,8 +430,7 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
     if (shouldRetry) { setShowFeedback(false); setLastDecision(null); return }
     if (savingRef.current) return
     savingRef.current = true
-    let nextTask: DispatchItem | null
-    try { nextTask = await createNextDispatchItem() } catch { return } finally { savingRef.current = false }
+    try { await pendingSave.current } catch { return } finally { savingRef.current = false }
     setShowFeedback(false)
     setLastDecision(null)
 
@@ -385,18 +440,7 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
     setInvestigationList((prev) => prev.map((item) => ({ ...item, checked: false })))
     
     // Move to the next case after a correct answer or the fourth wrong attempt
-    const completedEmailId = gameState.currentEmailId
-    if (nextTask) playTaskNotificationSound()
-    setGameState((prev) => ({
-      ...prev,
-      todaysTasksCompleted: prev.todaysTasksCompleted + 1,
-      tasksGeneratedToday: prev.tasksGeneratedToday + (nextTask ? 1 : 0),
-      dispatchQueue: nextTask ? [nextTask] : [],
-      currentTaskType: nextTask?.type ?? prev.currentTaskType,
-      currentEmailId: nextTask?.type === 'email' ? nextTask.id : null,
-      currentPasswordId: nextTask?.type === 'password' ? nextTask.id : null,
-      currentDocumentId: nextTask?.type === 'data-classification' ? nextTask.id : null,
-    }))
+    completeQueuedTask(gameState.currentEmailId)
   }
 
   const handleTogglePasswordCharacteristic = (id: string) => {
@@ -440,23 +484,12 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
   const handleContinueAfterPasswordFeedback = async () => {
     if (savingRef.current) return
     savingRef.current = true
-    let nextTask: DispatchItem | null
-    try { nextTask = await createNextDispatchItem() } catch { return } finally { savingRef.current = false }
+    try { await pendingSave.current } catch { return } finally { savingRef.current = false }
     setShowPasswordFeedback(false)
     setLastPasswordDecision(null)
     setCheckedPasswordCharacteristics(new Set())
     
-    if (nextTask) playTaskNotificationSound()
-    setGameState((prev) => ({
-      ...prev,
-      todaysTasksCompleted: prev.todaysTasksCompleted + 1,
-      tasksGeneratedToday: prev.tasksGeneratedToday + (nextTask ? 1 : 0),
-      dispatchQueue: nextTask ? [nextTask] : [],
-      currentTaskType: nextTask?.type ?? prev.currentTaskType,
-      currentEmailId: nextTask?.type === 'email' ? nextTask.id : null,
-      currentPasswordId: nextTask?.type === 'password' ? nextTask.id : null,
-      currentDocumentId: nextTask?.type === 'data-classification' ? nextTask.id : null,
-    }))
+    completeQueuedTask(gameState.currentPasswordId)
   }
 
   const handleDataClassification = (classification: 'public' | 'internal' | 'confidential' | 'restricted') => {
@@ -488,22 +521,11 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
   const handleContinueAfterDataClassificationFeedback = async () => {
     if (savingRef.current) return
     savingRef.current = true
-    let nextTask: DispatchItem | null
-    try { nextTask = await createNextDispatchItem() } catch { return } finally { savingRef.current = false }
+    try { await pendingSave.current } catch { return } finally { savingRef.current = false }
     setShowDataClassificationFeedback(false)
     setLastDataClassificationDecision(null)
     
-    if (nextTask) playTaskNotificationSound()
-    setGameState((prev) => ({
-      ...prev,
-      todaysTasksCompleted: prev.todaysTasksCompleted + 1,
-      tasksGeneratedToday: prev.tasksGeneratedToday + (nextTask ? 1 : 0),
-      dispatchQueue: nextTask ? [nextTask] : [],
-      currentTaskType: nextTask?.type ?? prev.currentTaskType,
-      currentEmailId: nextTask?.type === 'email' ? nextTask.id : null,
-      currentPasswordId: nextTask?.type === 'password' ? nextTask.id : null,
-      currentDocumentId: nextTask?.type === 'data-classification' ? nextTask.id : null,
-    }))
+    completeQueuedTask(gameState.currentDocumentId)
   }
 
   const handleSelectTask = (taskType: 'email' | 'password' | 'data-classification') => {
@@ -515,8 +537,7 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
   }
 
   const handleEndDay = async () => {
-    let nextTask: DispatchItem | null
-    try { nextTask = await createNextDispatchItem() } catch { return }
+    if (generationRef.current || gameState.dispatchQueue.length > 0) return
     console.log('[v0] End Day triggered')
     
     // Reset daily state while preserving graduation progress
@@ -524,12 +545,12 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
       ...prev,
       day: prev.day + 1,
       todaysTasksCompleted: 0,
-      tasksGeneratedToday: nextTask ? 1 : 0,
-      dispatchQueue: nextTask ? [nextTask] : [],
-      currentTaskType: nextTask?.type ?? 'email',
-      currentEmailId: nextTask?.type === 'email' ? nextTask.id : null,
-      currentPasswordId: nextTask?.type === 'password' ? nextTask.id : null,
-      currentDocumentId: nextTask?.type === 'data-classification' ? nextTask.id : null,
+      tasksGeneratedToday: 0,
+      dispatchQueue: [],
+      currentTaskType: 'email',
+      currentEmailId: null,
+      currentPasswordId: null,
+      currentDocumentId: null,
       investigatedCategories: new Set(),
       decision: null,
     }))

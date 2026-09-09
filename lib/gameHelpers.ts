@@ -63,13 +63,20 @@ export function generateRandomIncident(
   documents: DataClassification[],
   usedIncidents: Set<string> = new Set()
 ): { type: 'email' | 'password' | 'data-classification'; id: string; payload: Email | Password | DataClassification } | null {
-  // MVP mode: only generate email investigation tasks. The other catalogs stay
-  // available for a future task type rollout, but are intentionally ignored.
-  const availableEmails = emails.filter((email) => !usedIncidents.has(email.id))
-  if (availableEmails.length === 0) return null
-
-  const email = selectRandomFromArray(availableEmails)
-  return { type: 'email', id: email.id, payload: email }
+  const catalogs = [
+    { type: 'email' as const, weight: 70, items: emails.filter(item => !usedIncidents.has(item.id)) },
+    { type: 'data-classification' as const, weight: 20, items: documents.filter(item => !usedIncidents.has(item.id)) },
+    { type: 'password' as const, weight: 10, items: passwords.filter(item => !usedIncidents.has(item.id)) },
+  ].filter(catalog => catalog.items.length > 0)
+  let cursor = Math.random() * catalogs.reduce((sum, catalog) => sum + catalog.weight, 0)
+  for (const catalog of catalogs) {
+    cursor -= catalog.weight
+    if (cursor < 0) {
+      const payload = selectRandomFromArray<Email | Password | DataClassification>(catalog.items)
+      return { type: catalog.type, id: payload.id, payload }
+    }
+  }
+  return null
 }
 
 export function getUniqueRandomItems<T>(array: T[], count: number): T[] {

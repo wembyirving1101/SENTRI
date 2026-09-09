@@ -13,7 +13,7 @@ export interface PlayerProfile {
 async function readJson<T>(response: Response): Promise<T> {
   const body = await response.json()
   if (!response.ok) {
-    throw new Error(body.error ?? `Request failed with ${response.status}`)
+    throw Object.assign(new Error(body.error ?? `Request failed with ${response.status}`), { status: response.status })
   }
   return body as T
 }
@@ -25,11 +25,11 @@ export async function fetchPlayerProfile(userCode: string) {
   return readJson<PlayerProfile>(response)
 }
 
-export async function requestPersonalizedTask(userCode: string) {
+export async function requestPersonalizedTask(userCode: string, options: { taskType?: DispatchItem['type']; knownAssignmentIds?: string[] } = {}) {
   const response = await fetch('/api/tasks/next', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userCode }),
+    body: JSON.stringify({ userCode, ...options }),
   })
   return readJson<DispatchItem>(response)
 }

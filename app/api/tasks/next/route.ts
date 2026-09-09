@@ -3,6 +3,8 @@ import { isDatabaseConfigured, withTransaction } from '@/lib/db'
 
 interface NextTaskRequest {
   userCode?: string
+  taskType?: string
+  knownAssignmentIds?: string[]
 }
 
 interface CandidateRow {
@@ -53,6 +55,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'userCode is required' }, { status: 400 })
   }
 
+  if ((body.taskType && !['email', 'password', 'data-classification'].includes(body.taskType)) ||
+      (body.knownAssignmentIds !== undefined && (!Array.isArray(body.knownAssignmentIds) || body.knownAssignmentIds.some(id => typeof id !== 'string')))) {
+    return NextResponse.json({ error: 'Invalid task generation options' }, { status: 400 })
+  }
+
   try {
     const result = await withTransaction(async (client) => {
       // Serialize assignment creation for this user, including duplicate mount requests.
@@ -81,9 +88,11 @@ export async function POST(request: Request) {
            JOIN incident_types it ON it.incident_type_id = t.incident_type_id
           WHERE u.user_code = $1
             AND ta.status IN ('assigned', 'started')
+            AND NOT (ta.assignment_id::text = ANY($2::text[]))
+            AND ($3::text IS NULL OR it.incident_code = $3)
           ORDER BY ta.assignment_id DESC, a.attempt_number DESC
           LIMIT 1`,
-        [body.userCode],
+        [body.userCode, body.knownAssignmentIds ?? [], body.taskType ?? null],
       )
 
       const activeTask = activeResult.rows[0]
@@ -124,7 +133,8 @@ export async function POST(request: Request) {
              LEFT JOIN case_tags ct ON ct.case_id = c.case_id
              LEFT JOIN user_skill_profiles usp
                     ON usp.user_id = p.user_id AND usp.tag_id = ct.tag_id
-            WHERE (
+            WHERE ($2::text IS NULL OR it.incident_code = $2)
+              AND (
                     NOT EXISTS (SELECT 1 FROM task_target_departments td WHERE td.task_id = t.task_id)
                     OR EXISTS (
                       SELECT 1 FROM task_target_departments td
@@ -152,7 +162,7 @@ export async function POST(request: Request) {
            FROM candidates
           ORDER BY match_score DESC, random()
           LIMIT 1`,
-        [body.userCode],
+        [body.userCode, body.taskType ?? null],
       )
 
       const candidate = candidateResult.rows[0]

@@ -57,3 +57,26 @@ test('resume locks the user and returns existing assignment without inserting', 
   assert.match(statements[0], /FOR UPDATE/)
   assert.equal(statements.some((sql) => sql.includes('INSERT')), false)
 })
+
+test('regular generation excludes known assignments and selects the requested task type', async () => {
+  const calls = []
+  const route = loadRoute('app/api/tasks/next/route.ts', async (sql, values) => {
+    calls.push({ sql, values })
+    return { rows: [] }
+  })
+  const result = await route.POST({ json: async () => ({ userCode: 'test-user',
+    taskType: 'data-classification', knownAssignmentIds: ['12'] }) })
+  assert.equal(result.status, 404)
+  const active = calls.find(call => call.sql.includes('SELECT ta.user_id'))
+  assert.match(active.sql, /NOT \(ta.assignment_id::text = ANY/)
+  assert.deepEqual(Array.from(active.values), ['test-user', ['12'], 'data-classification'])
+  const candidate = calls.find(call => call.sql.includes('WITH player'))
+  assert.match(candidate.sql, /it.incident_code = \$2/)
+  assert.deepEqual(Array.from(candidate.values), ['test-user', 'data-classification'])
+})
+
+test('invalid generation options are rejected before querying the database', async () => {
+  const route = loadRoute('app/api/tasks/next/route.ts', async () => { throw new Error('Unexpected query') })
+  const result = await route.POST({ json: async () => ({ userCode: 'test-user', taskType: 'invalid' }) })
+  assert.equal(result.status, 400)
+})
