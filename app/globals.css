@@ -220,7 +220,7 @@ body {
   --font-mono: 'Courier New', monospace;
   --background: #474235;
   --foreground: #bdb8a8;
-  --card: #212729;
+  --card: #1e2426;
   --card-foreground: #bdb8a8;
   --panel: #bdb9aa;
   --panel-foreground: #222624;
@@ -259,7 +259,7 @@ body {
   border: 3px solid #131a1c;
   border-radius: 6px;
   color: var(--foreground);
-  background: linear-gradient(119deg,#ffffff04, #00000008 35%,#ffffff03 61%, #00000016), url('/design/grain.svg'), #22282a;
+  background: linear-gradient(119deg,#ffffff04, #00000008 35%,#ffffff03 61%, #00000016), url('/design/grain.svg'), #1e2426;
   box-shadow: inset 0 0 0 1px #727369, inset 0 0 0 4px #323839, inset 0 0 0 6px #151c1e, 0 2px 2px #171b1acc, 0 0 0 1px #85806d70;
 }
 
@@ -405,12 +405,13 @@ button:disabled {
 
 .header-controls {
   display: flex;
-  gap: 14px;
-  height: 78px;
+  align-self: center;
+  gap: 12px;
+  height: 64px;
 }
 
 .header-button {
-  width: 100px;
+  width: 64px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -557,53 +558,62 @@ button:disabled {
   overflow: hidden;
 }
 
+/* Center the framed portrait and speech together within the available panel. */
 .sentri-content {
   position: relative;
-  height: calc(100% - 25px);
+  height: calc(100% - 28px);
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding-top: 25px;
+  gap: 17px;
 }
 
 .sentri-portrait {
-  align-self: flex-end;
-  flex-shrink: 0;
-  width: 110px;
-  height: 134px;
-  background-image: url('/design/sentri-reference.png');
-  background-size: 2006.4px 1129.2px;
-  background-position: -48px -801.6px;
-  background-repeat: no-repeat;
+  flex: 0 0 112px;
+  height: 136px;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  border: 3px solid #0c1112;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #3b4039, #232a29);
+  box-shadow: inset 0 0 0 1px #74766a, 0 1px 0 #70736550;
+}
+
+.sentri-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center bottom;
   image-rendering: pixelated;
-  mask-image: linear-gradient(to bottom,#000 90%,transparent);
+  filter: saturate(.7) brightness(.88);
 }
 
 .sentri-speech {
   position: relative;
   flex: 1;
-  padding: 18px 15px;
-  margin-bottom: 10px;
-  min-height: 95px;
-  font-size: 22px;
+  padding: 14px 12px;
+  min-height: 115px;
+  display: flex;
+  align-items: center;
+  font-size: 21px;
   line-height: 1.3;
-  background: linear-gradient(120deg,#2b3030,#252a2c);
+  background: #2a2e2d;
   border: 2px solid #53584f;
-  border-radius: 6px;
-  box-shadow: 0 0 0 2px #161d20, inset 0 1px #97978925;
+  border-radius: 5px;
+  box-shadow: 0 0 0 2px #111719, inset 0 1px #97978925;
 }
 
 .sentri-speech::after {
   content: '';
   position: absolute;
-  left: 12px;
-  bottom: -14px;
+  left: -9px;
+  top: calc(50% - 7px);
   width: 14px;
-  height: 20px;
-  background: #282e2e;
+  height: 14px;
+  background: #2a2e2d;
   border-left: 2px solid #53584f;
-  transform: skewY(-40deg);
-  clip-path: polygon(0 0,100% 0,0 100%);
+  border-bottom: 2px solid #53584f;
+  transform: rotate(45deg);
 }
 
 .console-center,.console-details {
@@ -635,6 +645,17 @@ button:disabled {
   box-shadow: inset 0 0 14px #57584613;
 }
 
+/* One paper backing eliminates subpixel cracks between tabs and results. */
+.queue-surface {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 7px 7px 3px 3px;
+  overflow: hidden;
+  background: #bdb9aa;
+}
+
 .queue-tabs {
   display: flex;
   height: 54px;
@@ -642,40 +663,46 @@ button:disabled {
   gap: 0;
   width: 100%;
   margin: 0;
+  background: #1e2426;
 }
 
 .queue-tabs button {
   flex: 1 1 0;
   min-width: 0;
   padding: 12px;
-  border: 2px solid #11191b;
-  border-bottom: 0;
+  border: 0;
   border-radius: 7px 7px 0 0;
-  background: linear-gradient(#303637,#22282a);
+  background: linear-gradient(#2c3233,#1e2426);
   color: #b8b29f;
   font-size: 20px;
-  box-shadow: inset 0 2px #8f8f7d55;
-}
-
-.queue-tabs button + button {
-  border-left: 0;
+  box-shadow: inset 0 2px #777a6e55, inset 2px 0 #11191b, inset -2px 0 #11191b;
 }
 
 .queue-tabs button.is-selected {
   background: #bdb9aa;
   color: #202820;
-  box-shadow: inset 0 1px #d5d0bc66;
+  box-shadow: none;
 }
 
 .queue-tabs button:hover:not(.is-selected) {
-  background: #3b443b;
+  background: #353e35;
 }
 
 .queue-paper {
   flex: 1;
   min-height: 0;
-  padding: 10px 8px;
+  padding: 0 8px 10px;
   overflow: auto;
+  scrollbar-width: none;
+  border-radius: 0;
+  background: #bdb9aa;
+  box-shadow: none;
+}
+
+.queue-paper::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .queue-columns {
@@ -685,6 +712,10 @@ button:disabled {
 }
 
 .queue-column-headings {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #bdb9aa;
   height: 48px;
   font-size: 19px;
   color: #53564b;
@@ -886,7 +917,7 @@ button:disabled {
 .classification-levels {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 5px;
 }
 
 .classification-card {
@@ -896,7 +927,7 @@ button:disabled {
   border: 2px solid;
   border-radius: 4px;
   padding: 7px 16px;
-  min-height: 61px;
+  min-height: 55px;
   text-align: left;
 }
 
@@ -976,186 +1007,6 @@ button:disabled {
   display: inline-block;
   flex-shrink: 0;
   filter: drop-shadow(1px 2px 0 #0003);
-}
-
-.desk-surface {
-  height: 165px;
-  flex: 0 0 165px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 26px;
-  padding: 0 6px 7px;
-  position: relative;
-  background: linear-gradient(#302f2833,#403c32aa);
-}
-
-.handbook-object {
-  width: 310px;
-  height: 165px;
-  flex-shrink: 0;
-  background: url('/design/sentri-reference.png') -5px -900px/1897.72px 1068.035px no-repeat;
-  border: 0;
-  clip-path: polygon(11% 0,90% 0,100% 15%,97% 100%,0 100%,1% 25%);
-  filter: drop-shadow(4px 4px 1px #151916);
-}
-
-.handbook-object:hover {
-  filter: brightness(1.06) drop-shadow(4px 4px 1px #151916);
-}
-
-.desk-monitor {
-  width: 327px;
-  height: 151px;
-  padding: 15px;
-  flex-shrink: 0;
-}
-
-.monitor-screen {
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(ellipse,#253030,#182122);
-  border: 3px solid #0e191b;
-  border-radius: 3px;
-  box-shadow: inset 0 0 12px #0008,0 0 0 2px #5d635780;
-  padding: 5px 15px 10px;
-  text-align: center;
-}
-
-.monitor-screen h2 {
-  color: #99a780;
-  font-size: 19px;
-  line-height: 1.4;
-}
-
-.monitor-screen p {
-  font-size: 25px;
-  margin: 4px 0 7px;
-}
-
-.daily-task-track {
-  position: relative;
-  height: 25px;
-  border: 2px solid #989e8a;
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.daily-task-track>div {
-  height: 100%;
-  background: #89976e;
-}
-
-.daily-task-track i {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  background: #9fa58c;
-}
-
-.desk-organizer {
-  flex: 1;
-  min-width: 320px;
-  max-width: 480px;
-  height: 143px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 26px 16px 20px;
-  border-radius: 9px 9px 4px 4px;
-  background-color: #3b3e3b;
-  box-shadow: inset 0 0 0 1px #787b6f,inset 0 15px 0 #74736833,inset 0 -11px 0 #85867533,0 3px 3px #171b1a;
-}
-
-.organizer-slot {
-  position: absolute;
-  top: 9px;
-  left: 42%;
-  right: 42%;
-  height: 4px;
-  background: #182023;
-  border-bottom: 1px solid #969888;
-}
-
-.desk-message-button {
-  flex: 1;
-  height: 77px;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  font-size: 19px;
-}
-
-.desk-message-button .notification-badge {
-  position: absolute;
-  right: 7px;
-  top: 5px;
-  width: 24px;
-  min-width: 24px;
-  height: 24px;
-  font-size: 15px;
-}
-
-.coffee-object {
-  width: 175px;
-  height: 160px;
-  flex-shrink: 0;
-  background: url('/design/sentri-reference.png') -1225px -907px/1897.72px 1068.035px no-repeat;
-  clip-path: polygon(12% 7%,34% 0,63% 0,82% 10%,82% 24%,100% 26%,100% 69%,82% 76%,80% 95%,16% 100%,0 83%,0 24%);
-}
-
-.music-control {
-  width: 145px;
-  height: 128px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 13px;
-  font-size: 17px;
-  flex-shrink: 0;
-}
-
-.music-control:hover {
-  background-color: #303b36;
-}
-
-.end-day-control {
-  width: 268px;
-  height: 139px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 11px;
-  padding: 20px 18px 13px;
-  flex-shrink: 0;
-}
-
-.end-day-button {
-  width: 100%;
-  height: 46px;
-  background: #b7af98;
-  border: 3px solid #141e20;
-  color: #242b27;
-  box-shadow: inset 0 2px #d9cdb077,0 2px 2px #0009;
-  font-size: 22px;
-  border-radius: 3px;
-}
-
-.end-day-button:hover:enabled {
-  background: #c1bba4;
-}
-
-.end-day-control>span {
-  font-size: 19px;
-  background: #1c2525;
-  padding: 1px 17px;
-  border: 1px solid #687060;
-  border-radius: 3px;
 }
 
 .console-modal-backdrop {
@@ -1281,7 +1132,7 @@ button:disabled {
 }
 
 .sentri-console [class*='bg-[#171b1d]'] {
-  background-color: #22282a;
+  background-color: #1e2426;
 }
 
 .sentri-console [class*='text-[#000000]'] {
@@ -1479,11 +1330,6 @@ html, body, .sentri-console, .sentri-console * {
   font-size: 22px;
 }
 
-.sentri-portrait {
-  mask-image: none;
-  clip-path: polygon(42% 0,57% 0,60% 12%,52% 20%,52% 24%,70% 26%,84% 38%,88% 51%,99% 52%,99% 77%,88% 78%,82% 88%,94% 100%,5% 100%,14% 88%,7% 77%,0 77%,0 53%,8% 51%,13% 39%,29% 27%,43% 24%,44% 18%,39% 10%);
-}
-
 .design-preview-label {
   position: absolute;
   z-index: 2;
@@ -1543,7 +1389,7 @@ html, body, .sentri-console, .sentri-console * {
 }
 
 .classification-card {
-  padding: 4px 16px;
+  padding: 2px 16px;
 }
 
 .classification-card strong {
@@ -1573,4 +1419,11 @@ html, body, .sentri-console, .sentri-console * {
 .sentri-console svg:not(.game-icon) {
   filter: drop-shadow(.65px 0 0 #080b0b) drop-shadow(-.65px 0 0 #080b0b)
     drop-shadow(0 .65px 0 #080b0b) drop-shadow(0 -.65px 0 #080b0b);
+}
+
+.help-question {
+  font-family: var(--font-mono);
+  font-size: 50px;
+  line-height: 1;
+  text-shadow: 2px 2px #0b1112;
 }

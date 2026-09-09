@@ -1,4 +1,4 @@
-import { Settings, CircleHelp } from 'lucide-react';
+import { Settings } from 'lucide-react';
 interface HeaderProps {
     currentTime: string;
     graduationProgress: number;
@@ -23,8 +23,8 @@ export default function Header({ currentTime, graduationProgress, onSettingsClic
       </div>
     </div>
     <div className="header-controls">
-      <button className="console-button header-button" onClick={onHelpClick} aria-label="Help"><CircleHelp size={34}/><span>HELP</span></button>
-      <button className="console-button header-button" onClick={onSettingsClick} aria-label="Settings"><Settings size={34}/><span>SETTINGS</span></button>
+      <button className="console-button header-button" onClick={onHelpClick} aria-label="Help" title="Help"><span className="help-question" aria-hidden="true">?</span></button>
+      <button className="console-button header-button" onClick={onSettingsClick} aria-label="Settings" title="Settings"><Settings size={32} aria-hidden="true"/></button>
     </div>
   </header>;
 }

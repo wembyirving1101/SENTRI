@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { DispatchItem, Email, Password, DataClassification } from '@/lib/types';
 import { useClickSound } from '@/lib/useClickSound';
 import GameIcon from './GameIcon';
@@ -12,12 +12,14 @@ interface DispatchQueueViewProps {
 export default function DispatchQueueView({ queue, selectedQueueId, onSelectQueue, isLoading }: DispatchQueueViewProps) {
     const playClickSound = useClickSound();
     const [activeTab, setActiveTab] = useState('all');
+    const paperRef = useRef<HTMLDivElement>(null);
     const tabs = [{ id: 'all', label: 'ALL' }, { id: 'email', label: 'EMAIL' }, { id: 'password', label: 'PASSWORD' }, { id: 'data-classification', label: 'DATA' }];
     const filtered = activeTab === 'all' ? queue : queue.filter(item => item.type === activeTab);
     return <section className="queue-window metal-frame" aria-label="Dispatch queue" aria-busy={isLoading}>
     <h2 className="window-heading">DISPATCH QUEUE</h2>
-    <div className="queue-tabs" role="tablist" aria-label="Filter tasks">{tabs.map(tab => <button key={tab.id} role="tab" aria-selected={activeTab === tab.id} aria-controls="queue-results" id={`queue-tab-${tab.id}`} tabIndex={0} className={activeTab === tab.id ? 'is-selected' : ''} onClick={() => { playClickSound(); setActiveTab(tab.id); }}>{tab.label} ({tab.id === 'all' ? queue.length : queue.filter(item => item.type === tab.id).length})</button>)}</div>
-    <div className="queue-paper paper-surface" id="queue-results" role="tabpanel" aria-labelledby={`queue-tab-${activeTab}`}>
+    <div className="queue-surface">
+    <div className="queue-tabs" role="tablist" aria-label="Filter tasks">{tabs.map(tab => <button key={tab.id} role="tab" aria-selected={activeTab === tab.id} aria-controls="queue-results" id={`queue-tab-${tab.id}`} tabIndex={0} className={activeTab === tab.id ? 'is-selected' : ''} onClick={() => { playClickSound(); setActiveTab(tab.id); paperRef.current?.scrollTo({ top: 0 }); }}>{tab.label} ({tab.id === 'all' ? queue.length : queue.filter(item => item.type === tab.id).length})</button>)}</div>
+    <div className="queue-paper paper-surface" ref={paperRef} tabIndex={0} id="queue-results" role="tabpanel" aria-labelledby={`queue-tab-${activeTab}`}>
       <div className="queue-columns queue-column-headings"><span>TYPE</span><span>TASK</span><span>FROM</span><span>TIME</span><span>PRIORITY</span></div>
       <div className="queue-rows">{filtered.map(item => {
             const email = item.payload as Email;
@@ -33,6 +35,7 @@ export default function DispatchQueueView({ queue, selectedQueueId, onSelectQueu
         </button>;
         })}</div>
       {filtered.length === 0 && <div className="queue-empty" role="status">{isLoading ? 'Receiving your next assignment…' : 'No tasks in this queue.'}</div>}
+    </div>
     </div>
   </section>;
 }

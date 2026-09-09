@@ -28,15 +28,31 @@ export default function DeskUI({ onEndDay, tasksCompleted = 0, tasksTotal = 0, i
     const completion = tasksTotal > 0 ? Math.min(100, tasksCompleted / tasksTotal * 100) : 0;
     return <>
     <footer className="desk-surface">
-      <button className="handbook-object" aria-label="Open employee handbook" onClick={() => open('handbook')}/>
-      <section className="desk-monitor metal-frame" aria-label="Today's task progress"><div className="monitor-screen"><h2>TODAY’S TASKS</h2><p>{tasksCompleted} / {tasksTotal} COMPLETE</p><div className="daily-task-track" role="progressbar" aria-label="Today's tasks" aria-valuemin={0} aria-valuemax={tasksTotal || 1} aria-valuenow={tasksCompleted}><div style={{ width: `${completion}%` }}/>{[25, 50, 75].map(mark => <i key={mark} style={{ left: `${mark}%` }}/>)}</div></div></section>
-      <div className="desk-organizer metal-frame"><div className="organizer-slot"/>
-        <button className="console-button desk-message-button" onClick={() => open('messages')}><GameIcon name="email" size={36}/><span>MESSAGES</span></button>
-        <button className="console-button desk-message-button" onClick={() => open('notes')}><GameIcon name="notes" size={36}/><span>NOTES</span>{notes.trim() && <span className="notification-badge">1</span>}</button>
+      <button className="handbook-object" aria-label="Open employee handbook" onClick={() => open('handbook')}><img src="/design/handbook-depth.png" alt="" width={280} height={210}/></button>
+      <section className="desk-device desk-monitor" aria-label="Today's task progress">
+        <div className="device-base" aria-hidden="true"/>
+        <div className="device-face monitor-face metal-frame"><div className="monitor-screen"><h2>TODAY’S TASKS</h2><p>{tasksCompleted} / {tasksTotal} COMPLETE</p><div className="daily-task-track" role="progressbar" aria-label="Today's tasks" aria-valuemin={0} aria-valuemax={tasksTotal || 1} aria-valuenow={tasksCompleted}><div style={{ width: `${completion}%` }}/>{[25, 50, 75].map(mark => <i key={mark} style={{ left: `${mark}%` }}/>)}</div></div></div>
+      </section>
+      <div className="desk-device desk-organizer">
+        <div className="device-base" aria-hidden="true"/>
+        <div className="device-roof" aria-hidden="true"><i className="organizer-slot"/></div>
+        <div className="device-face organizer-face metal-frame">
+          <button className="console-button desk-message-button" onClick={() => open('messages')}><GameIcon name="email" size={36}/><span>MESSAGES</span></button>
+          <button className="console-button desk-message-button" onClick={() => open('notes')}><GameIcon name="notes" size={36}/><span>NOTES</span>{notes.trim() && <span className="notification-badge">1</span>}</button>
+          <i className="device-vents" aria-hidden="true"/>
+        </div>
       </div>
-      <div className="coffee-object" role="img" aria-label="Kakfung Industries coffee mug"/>
-      <button className="music-control metal-frame" onClick={() => { playClickSound(); onToggleMute?.(); }} aria-label={isMuted ? 'Unmute music' : 'Mute music'} aria-pressed={!isMuted}>{isMuted ? <VolumeX size={34}/> : <GameIcon name="music" size={34}/>}<span>{isMuted ? 'MUTED' : 'MUSIC'}</span></button>
-      <div className="end-day-control metal-frame"><button className="end-day-button" onClick={() => { playClickSound(); onEndDay?.(); }} disabled={isBusy}>END DAY</button><span>{tasksCompleted}/{tasksTotal} TASKS</span></div>
+      <div className="desk-device music-device">
+        <div className="device-base" aria-hidden="true"/>
+        <div className="device-roof" aria-hidden="true"/>
+        <button className="device-face music-control metal-frame" onClick={() => { playClickSound(); onToggleMute?.(); }} aria-label={isMuted ? 'Unmute music' : 'Mute music'} aria-pressed={!isMuted}>{isMuted ? <VolumeX size={34}/> : <GameIcon name="music" size={34}/>}<span>{isMuted ? 'MUTED' : 'MUSIC'}</span><i className="device-vents" aria-hidden="true"/></button>
+      </div>
+      <div className="coffee-object" role="img" aria-label="Kahfung Industries coffee mug"><img src="/design/coffee-depth.png" alt="" width={175} height={190}/></div>
+      <div className="desk-device end-day-device">
+        <div className="device-base" aria-hidden="true"/>
+        <div className="device-roof" aria-hidden="true"/>
+        <div className="device-face end-day-control metal-frame"><button className="end-day-button" onClick={() => { playClickSound(); onEndDay?.(); }} disabled={isBusy}>END DAY</button><span>{tasksCompleted}/{tasksTotal} TASKS</span><i className="device-vents" aria-hidden="true"/></div>
+      </div>
     </footer>
     {modal && <div className="console-modal-backdrop" onClick={() => setModal(null)}><section className="console-modal metal-frame" role="dialog" aria-modal="true" aria-labelledby="desk-modal-title" onClick={event => event.stopPropagation()}><div className="modal-title"><h2 id="desk-modal-title">{modal === 'handbook' ? 'EMPLOYEE HANDBOOK' : modal.toUpperCase()}</h2><button className="console-button" aria-label="Close" onClick={() => setModal(null)}>✕</button></div>
       {modal === 'handbook' && <div className="paper-surface handbook-pages"><h3>COMPANY SECURITY POLICY</h3><h4>Email safety</h4><p>Verify the sender’s identity and domain. Inspect links and attachments before responding. The company will never request your password or PIN by email.</p><h4>Password security</h4><p>Use long, unique passwords. Review submitted passwords against company policy and request revisions when needed.</p><h4>Data handling</h4><p>Classify information before sharing it. Public data can be shared freely; internal information stays within the company. Confidential and restricted information require authorized access.</p><h4>Incident reporting</h4><p>Collect evidence and contact the appropriate person when a request seems suspicious.</p></div>}
