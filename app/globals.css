@@ -436,13 +436,13 @@ button:disabled {
 }
 
 .company-window {
-  padding: 15px 23px;
+  padding: 12px 23px;
 }
 
 .company-content {
   display: flex;
   gap: 20px;
-  margin-top: 18px;
+  margin-top: 8px;
   align-items: flex-start;
 }
 
@@ -450,19 +450,27 @@ button:disabled {
   flex: 1;
   min-width: 0;
   font-family: var(--font-mono);
-  font-size: 21px;
-  line-height: 1.3;
+  font-size: 24px;
+  line-height: 1;
 }
 
 .company-info>p:first-child {
-  max-width: 190px;
+  max-width: 160px;
+  margin-bottom: 3px;
+}
+
+.company-info>p:last-child {
+  font-size: 22px;
+  line-height: 1;
+  margin-top: 2px;
 }
 
 .department-label {
   border-top: 1px solid #77776855;
-  padding-top: 5px;
-  margin-top: 9px;
+  padding-top: 4px;
+  margin-top: 5px;
   font-size: 17px;
+  line-height: 1;
   color: #959482;
 }
 
@@ -631,12 +639,14 @@ button:disabled {
   display: flex;
   height: 54px;
   flex-shrink: 0;
-  gap: 3px;
-  margin: 0 4px;
+  gap: 0;
+  width: 100%;
+  margin: 0;
 }
 
 .queue-tabs button {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
   padding: 12px;
   border: 2px solid #11191b;
   border-bottom: 0;
@@ -645,6 +655,10 @@ button:disabled {
   color: #b8b29f;
   font-size: 20px;
   box-shadow: inset 0 2px #8f8f7d55;
+}
+
+.queue-tabs button + button {
+  border-left: 0;
 }
 
 .queue-tabs button.is-selected {
@@ -1388,13 +1402,6 @@ html, body, .sentri-console, .sentri-console * {
   font-size: 18px;
 }
 
-.company-info {
-  font-size: 26px;
-}
-
-.department-label {
-  font-size: 22px;
-}
 
 .navigation-task {
   font-size: 23px;
@@ -1562,8 +1569,8 @@ html, body, .sentri-console, .sentri-console * {
   margin: 6px 0 8px;
 }
 
-.company-info>p:first-child {
-  max-width: 160px;
-  line-height: 1.05;
-  margin-bottom: 3px;
+/* Outline the colored line icons too, so they remain distinct on paper and metal. */
+.sentri-console svg:not(.game-icon) {
+  filter: drop-shadow(.65px 0 0 #080b0b) drop-shadow(-.65px 0 0 #080b0b)
+    drop-shadow(0 .65px 0 #080b0b) drop-shadow(0 -.65px 0 #080b0b);
 }

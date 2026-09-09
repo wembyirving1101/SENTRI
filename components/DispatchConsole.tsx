@@ -583,7 +583,7 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
         {/* Left Sidebar - Fixed 320px width */}
         <div className="console-sidebar">
           <CompanyCard 
-            companyName="KAKFUNG INDUSTRIES"
+            companyName="KAHFUNG INDUSTRIES"
             department="OPERATIONS"
             role="Associate"
           />
