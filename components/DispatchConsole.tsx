@@ -108,6 +108,7 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
   const [investigationPerformance, setInvestigationPerformance] = useState(createInitialInvestigationPerformance)
 
   const generationRef = useRef(false)
+  const databaseExhaustedRef = useRef(false)
   const gameStateRef = useRef(gameState)
   gameStateRef.current = gameState
   const performanceRef = useRef(investigationPerformance)
@@ -151,20 +152,28 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
 
   const createNextDispatchItem = async (): Promise<DispatchItem | null> => {
     if (designPreview) return createMockDispatchItem()
+    if (databaseExhaustedRef.current) return null
     setIsLoadingTask(true)
     try {
       await pendingSave.current
       const item = await requestPersonalizedTask(demoUserCode, {
-        taskType: taskSequence[gameStateRef.current.tasksGeneratedToday % taskSequence.length],
         knownAssignmentIds: [...knownAssignmentsRef.current],
       })
       setConnectionError(null)
       return item
     } catch (error) {
-      // Use the built-in catalog when the database has no eligible case of this type.
+      // A database response of 404 means there is no eligible persisted task for
+      // this request. Do not silently replace it with local catalog data: doing
+      // so makes the UI show tasks that cannot appear in Neon. Mock data is only
+      // allowed when the developer explicitly enables the fallback flag.
       if (error instanceof Error && 'status' in error && error.status === 404) {
-        setConnectionError(null)
-        return createMockDispatchItem()
+        if (process.env.NEXT_PUBLIC_ALLOW_MOCK_FALLBACK === 'true') {
+          setConnectionError(null)
+          return createMockDispatchItem()
+        }
+        databaseExhaustedRef.current = true
+        setConnectionError('No more eligible database tasks are available for this user.')
+        return null
       }
       setConnectionError(error instanceof Error ? error.message : 'Unable to load the next task')
       if (process.env.NEXT_PUBLIC_ALLOW_MOCK_FALLBACK === 'true') return createMockDispatchItem()
@@ -591,7 +600,7 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
     >
       {designPreview && <span className="design-preview-label">DESIGN PREVIEW · SAMPLE DATA</span>}
       {/* Header - Fixed height */}
-      {connectionError && <div role="alert" className="connection-notice"><span>Dispatch connection unavailable. Your progress has not been changed.</span><button onClick={() => window.location.reload()}>RETRY</button></div>}
+      {connectionError && <div role="alert" className="connection-notice"><span>{connectionError}</span><button onClick={() => window.location.reload()}>RETRY</button></div>}
       <Header 
         currentTime={displayTime} 
         graduationProgress={gameState.graduationProgress}
