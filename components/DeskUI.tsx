@@ -1,245 +1,53 @@
-'use client'
-
-import { useState } from 'react'
-import { BookOpen, MessageSquare, FileText, Coffee, LogOut, Volume2, VolumeX } from 'lucide-react'
-import { borderVariants } from '@/lib/borderVariants'
-import { cn } from '@/lib/utils'
-import { useClickSound } from '@/lib/useClickSound'
-
+'use client';
+import { useEffect, useState } from 'react';
+import { useDialogFocus } from '@/lib/useDialogFocus';
+import { VolumeX } from 'lucide-react';
+import GameIcon from './GameIcon';
+import { useClickSound } from '@/lib/useClickSound';
 interface DeskUIProps {
-  progressPercentage: number
-  onEndDay?: () => void
-  tasksCompleted?: number
-  isMuted?: boolean
-  onToggleMute?: () => void
+    progressPercentage: number;
+    onEndDay?: () => void;
+    tasksCompleted?: number;
+    tasksTotal?: number;
+    isMuted?: boolean;
+    onToggleMute?: () => void;
+    isBusy?: boolean;
 }
-
-export default function DeskUI({ progressPercentage, onEndDay, tasksCompleted = 0, isMuted = false, onToggleMute }: DeskUIProps) {
-  const playClickSound = useClickSound()
-  const [showHandbookModal, setShowHandbookModal] = useState(false)
-  const [showMessagesModal, setShowMessagesModal] = useState(false)
-  const [showNotesModal, setShowNotesModal] = useState(false)
-
-  return (
-    <>
-      {/* Persistent Desk UI - Fixed height bottom row */}
-      <div className="w-[1920px] h-52 bg-gradient-to-t from-[#171b1d] to-[#1f1f1f] border-t border-[#444444] px-6 py-4 flex items-end justify-between gap-6 flex-shrink-0">
-        {/* Left: Employee Handbook */}
-        <div className="flex gap-4">
-          {/* Handbook */}
-          <button
-            onClick={() => {
-              playClickSound()
-              setShowHandbookModal(true)
-            }}
-            className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity"
-          >
-            <div className="relative w-16 h-20 bg-[#c9a96e] rounded-sm border-2 border-[#8b7355] shadow-lg hover:shadow-xl transition-shadow">
-              {/* Handbook spine details */}
-              <div className="absolute inset-0 p-2 flex flex-col items-center justify-center">
-                <div className="text-[10px] font-bold text-[#5d4e37] text-center leading-tight ui-font">
-                  EMPLOYEE
-                </div>
-                <div className="text-[9px] text-[#5d4e37] mt-1 ui-font">
-                  HANDBOOK
-                </div>
-                <div className="mt-2 text-[20px]">📗</div>
-              </div>
-            </div>
-            <span className="text-[11px] text-muted-foreground ui-font whitespace-nowrap">
-              HANDBOOK
-            </span>
-          </button>
-
-          {/* Company Password Policy Card */}
-          <div className="w-56 h-28 bg-[#171b1d] border border-[#444444] rounded-sm p-3 shadow-lg flex flex-col justify-between">
-            <div>
-              <div className="text-[10px] font-bold text-primary uppercase tracking-wider mb-2 ui-font">
-                Company Password Policy
-              </div>
-              <div className="text-[8px] text-muted-foreground space-y-0.5 ui-font">
-                <p className="line-clamp-1">
-                  <span className="text-primary">▸</span> Strong passwords are the first line of defense.
-                </p>
-                <p className="line-clamp-1">
-                  <span className="text-primary">▸</span> Never approve weak or reused passwords.
-                </p>
-              </div>
-            </div>
-            <button className="text-[10px] text-primary hover:underline ui-font uppercase tracking-wider text-left">
-              VIEW POLICY
-            </button>
-          </div>
-        </div>
-
-        {/* Center: Messages and Notes */}
-        <div className="flex gap-4">
-          {/* Messages */}
-          <button
-            onClick={() => {
-              playClickSound()
-              setShowMessagesModal(true)
-            }}
-            className="relative flex flex-col items-center gap-1 px-4 py-2 bg-[#333333] border border-[#444444] rounded hover:bg-[#3a3a3a] transition-colors"
-          >
-            <MessageSquare className="w-5 h-5" />
-            <span className="text-[10px] ui-font uppercase">Messages</span>
-            <span className="absolute -top-2 -right-2 w-5 h-5 bg-destructive rounded-full flex items-center justify-center text-[10px] font-bold">
-              2
-            </span>
-          </button>
-
-          {/* Notes */}
-          <button
-            onClick={() => {
-              playClickSound()
-              setShowNotesModal(true)
-            }}
-            className="relative flex flex-col items-center gap-1 px-4 py-2 bg-[#333333] border border-[#444444] rounded hover:bg-[#3a3a3a] transition-colors"
-          >
-            <FileText className="w-5 h-5" />
-            <span className="text-[10px] ui-font uppercase">Notes</span>
-            <span className="absolute -top-2 -right-2 w-5 h-5 bg-muted rounded-full flex items-center justify-center text-[10px] font-bold text-background">
-              1
-            </span>
-          </button>
-        </div>
-
-        {/* Right: Coffee Mug, Mute Button and End Day */}
-        <div className="flex gap-6 items-center">
-          {/* Coffee Mug */}
-          <div className="flex flex-col items-center gap-1">
-            <div className="text-4xl">☕</div>
-            <span className="text-[9px] text-muted-foreground ui-font text-center">
-              KAFKUNG<br />IND.
-            </span>
-          </div>
-
-          {/* Mute Button */}
-          <button
-            onClick={() => {
-              playClickSound()
-              onToggleMute?.()
-            }}
-            className="flex flex-col items-center gap-2 px-4 py-2 bg-[#333333] border border-[#444444] rounded hover:bg-[#3a3a3a] transition-colors"
-          >
-            {isMuted ? (
-              <VolumeX className="w-5 h-5 text-destructive" />
-            ) : (
-              <Volume2 className="w-5 h-5" />
-            )}
-            <span className="text-[10px] ui-font uppercase">{isMuted ? 'Muted' : 'Music'}</span>
-          </button>
-
-          {/* End Day Button */}
-          <button 
-            onClick={() => {
-              playClickSound()
-              onEndDay?.()
-            }}
-            className="flex flex-col items-center gap-2 px-6 py-2 bg-gradient-to-b from-[#c9a96e] to-[#b8956e] text-[#171b1d] rounded hover:from-[#d4b896] hover:to-[#c9a96e] transition-all font-bold shadow-lg hover:shadow-xl border border-[#8b7355]"
-          >
-            <LogOut className="w-5 h-5" />
-            <span className="text-[10px] ui-font uppercase tracking-wider">End Day</span>
-            <span className="text-[9px] ui-font text-opacity-80">
-              {tasksCompleted}/4 TASKS
-            </span>
-          </button>
-        </div>
+export default function DeskUI({ onEndDay, tasksCompleted = 0, tasksTotal = 0, isMuted = false, onToggleMute, isBusy }: DeskUIProps) {
+    const playClickSound = useClickSound();
+    const [modal, setModal] = useState<'handbook' | 'messages' | 'notes' | null>(null);
+    const [notes, setNotes] = useState('');
+    useDialogFocus(modal !== null, () => setModal(null));
+    useEffect(() => {
+        try {
+            setNotes(localStorage.getItem('sentri-notes') ?? '');
+        }
+        catch { }
+    }, []);
+    const open = (name: typeof modal) => { playClickSound(); setModal(name); };
+    const completion = tasksTotal > 0 ? Math.min(100, tasksCompleted / tasksTotal * 100) : 0;
+    return <>
+    <footer className="desk-surface">
+      <button className="handbook-object" aria-label="Open employee handbook" onClick={() => open('handbook')}/>
+      <section className="desk-monitor metal-frame" aria-label="Today's task progress"><div className="monitor-screen"><h2>TODAY’S TASKS</h2><p>{tasksCompleted} / {tasksTotal} COMPLETE</p><div className="daily-task-track" role="progressbar" aria-label="Today's tasks" aria-valuemin={0} aria-valuemax={tasksTotal || 1} aria-valuenow={tasksCompleted}><div style={{ width: `${completion}%` }}/>{[25, 50, 75].map(mark => <i key={mark} style={{ left: `${mark}%` }}/>)}</div></div></section>
+      <div className="desk-organizer metal-frame"><div className="organizer-slot"/>
+        <button className="console-button desk-message-button" onClick={() => open('messages')}><GameIcon name="email" size={36}/><span>MESSAGES</span></button>
+        <button className="console-button desk-message-button" onClick={() => open('notes')}><GameIcon name="notes" size={36}/><span>NOTES</span>{notes.trim() && <span className="notification-badge">1</span>}</button>
       </div>
-
-      {/* Modals (placeholders for now) */}
-      {showHandbookModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm" style={{ transform: 'scale(1)' }}>
-          <div className={cn('bg-card rounded-lg p-6 w-96 h-96', borderVariants({ variant: 'emphasis' }))}>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-bold">Employee Handbook</h2>
-              <button
-                onClick={() => {
-                  playClickSound()
-                  setShowHandbookModal(false)
-                }}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="text-sm text-muted-foreground space-y-3">
-              <p>
-                <strong>Company Policies:</strong> Review all company policies and security guidelines.
-              </p>
-              <p>
-                <strong>Password Security:</strong> Maintain strong password standards across the organization.
-              </p>
-              <p>
-                <strong>Email Safety:</strong> Always verify sender identity and be cautious with suspicious emails.
-              </p>
-              <p>
-                <strong>Data Protection:</strong> Handle all data according to classification levels and compliance requirements.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showMessagesModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm" style={{ transform: 'scale(1)' }}>
-          <div className={cn('bg-card rounded-lg p-6 w-96 h-96', borderVariants({ variant: 'emphasis' }))}>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-bold">Messages</h2>
-              <button
-                onClick={() => {
-                  playClickSound()
-                  setShowMessagesModal(false)
-                }}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="space-y-3">
-              <div className={cn('p-3 bg-secondary/50 rounded', borderVariants({ variant: 'divider' }))}>
-                <p className="text-sm font-semibold">Security Alert</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  New suspicious activity detected in today&apos;s email batch.
-                </p>
-              </div>
-              <div className={cn('p-3 bg-secondary/50 rounded', borderVariants({ variant: 'divider' }))}>
-                <p className="text-sm font-semibold">Task Update</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  You have 1 more password strength assessment to complete.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showNotesModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm" style={{ transform: 'scale(1)' }}>
-          <div className={cn('bg-card rounded-lg p-6 w-96 h-96', borderVariants({ variant: 'emphasis' }))}>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-bold">Notes</h2>
-              <button
-                onClick={() => {
-                  playClickSound()
-                  setShowNotesModal(false)
-                }}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="space-y-3">
-              <div className="p-3 bg-secondary/50 rounded border border-border">
-                <p className="text-sm text-muted-foreground">
-                  <strong>Investigation Tip:</strong> Always verify sender email address and check for subtle phishing indicators.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
-  )
+      <div className="coffee-object" role="img" aria-label="Kakfung Industries coffee mug"/>
+      <button className="music-control metal-frame" onClick={() => { playClickSound(); onToggleMute?.(); }} aria-label={isMuted ? 'Unmute music' : 'Mute music'} aria-pressed={!isMuted}>{isMuted ? <VolumeX size={34}/> : <GameIcon name="music" size={34}/>}<span>{isMuted ? 'MUTED' : 'MUSIC'}</span></button>
+      <div className="end-day-control metal-frame"><button className="end-day-button" onClick={() => { playClickSound(); onEndDay?.(); }} disabled={isBusy}>END DAY</button><span>{tasksCompleted}/{tasksTotal} TASKS</span></div>
+    </footer>
+    {modal && <div className="console-modal-backdrop" onClick={() => setModal(null)}><section className="console-modal metal-frame" role="dialog" aria-modal="true" aria-labelledby="desk-modal-title" onClick={event => event.stopPropagation()}><div className="modal-title"><h2 id="desk-modal-title">{modal === 'handbook' ? 'EMPLOYEE HANDBOOK' : modal.toUpperCase()}</h2><button className="console-button" aria-label="Close" onClick={() => setModal(null)}>✕</button></div>
+      {modal === 'handbook' && <div className="paper-surface handbook-pages"><h3>COMPANY SECURITY POLICY</h3><h4>Email safety</h4><p>Verify the sender’s identity and domain. Inspect links and attachments before responding. The company will never request your password or PIN by email.</p><h4>Password security</h4><p>Use long, unique passwords. Review submitted passwords against company policy and request revisions when needed.</p><h4>Data handling</h4><p>Classify information before sharing it. Public data can be shared freely; internal information stays within the company. Confidential and restricted information require authorized access.</p><h4>Incident reporting</h4><p>Collect evidence and contact the appropriate person when a request seems suspicious.</p></div>}
+      {modal === 'messages' && <div className="paper-surface handbook-pages"><h3>DISPATCH NOTICE</h3><p>Your current assignments are available in View Queue. Select an assignment and choose Start Task to begin.</p><p>{tasksCompleted} of {tasksTotal} tasks completed today.</p></div>}
+      {modal === 'notes' && <><label className="sr-only" htmlFor="investigation-notes">Investigation notes</label><textarea id="investigation-notes" className="paper-surface notes-paper" maxLength={500} placeholder="Write your observations here…" value={notes} onChange={event => {
+                    setNotes(event.target.value);
+                    try {
+                        localStorage.setItem('sentri-notes', event.target.value);
+                    }
+                    catch { }
+                }}/><p className="notes-count">{notes.length}/500 · Saved on this device</p></>}
+    </section></div>}
+  </>;
 }

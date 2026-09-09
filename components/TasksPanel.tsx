@@ -1,71 +1,27 @@
-import { Mail, Lock, FileText } from 'lucide-react'
-import { borderVariants } from '@/lib/borderVariants'
-import { cn } from '@/lib/utils'
-import { useClickSound } from '@/lib/useClickSound'
-import { DispatchItem } from '@/lib/types'
-
+import GameIcon from './GameIcon';
+import { useClickSound } from '@/lib/useClickSound';
+import { DispatchItem, TaskType } from '@/lib/types';
 interface TasksPanelProps {
-  currentTaskType: 'email' | 'password' | 'data-classification'
-  onSelectTask: (taskType: 'email' | 'password' | 'data-classification') => void
-  dispatchQueue: DispatchItem[]
+    currentTaskType: TaskType;
+    onSelectTask: (taskType: TaskType) => void;
+    dispatchQueue: DispatchItem[];
+    isQueueOpen?: boolean;
 }
-
-export default function TasksPanel({ currentTaskType, onSelectTask, dispatchQueue }: TasksPanelProps) {
-  const playClickSound = useClickSound()
-  
-  const emailCount = dispatchQueue.filter((item) => item.type === 'email').length
-  const tasks = [
-    {
-      id: 'password', icon: Lock, label: 'Password Review',
-      active: currentTaskType === 'password',
-      count: dispatchQueue.filter((item) => item.type === 'password').length,
-    },
-    {
-      id: 'data-classification', icon: FileText, label: 'Data Classification',
-      active: currentTaskType === 'data-classification',
-      count: dispatchQueue.filter((item) => item.type === 'data-classification').length,
-    },
-    {
-      id: 'email',
-      icon: Mail,
-      label: 'Email Investigation',
-      active: currentTaskType === 'email',
-      count: emailCount,
-    },
-  ]
-
-  return (
-    <div className={cn('bg-card rounded p-4 flex-1 flex flex-col', borderVariants({ variant: 'emphasis' }))}>
-      <h2 className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-3">
-        TASKS
-      </h2>
-      <div className="space-y-2 flex-1">
-        {tasks.map((task) => {
-          const Icon = task.icon
-          return (
-            <button
-              key={task.id}
-              onClick={() => {
-                playClickSound()
-                onSelectTask(task.id as any)
-              }}
-              className={`w-full flex items-center gap-2 px-4 py-3 rounded text-base font-bold transition-colors ${
-                task.active
-                  ? 'bg-success text-success-foreground hover:opacity-90'
-                  : 'bg-secondary text-foreground hover:bg-opacity-75'
-              }`}
-            >
-              <Icon size={20} />
-              <span className="flex-1 text-left font-bold">{task.label}</span>
-              {task.count > 0 && (
-                <span className="ml-2 px-2 py-1 bg-destructive text-destructive-foreground rounded text-xs font-bold">
-                  {task.count}
-                </span>
-              )}
-            </button>
-          )
-        })}
-      </div>
-    </div>
-  )
+export default function TasksPanel({ currentTaskType, onSelectTask, dispatchQueue, isQueueOpen }: TasksPanelProps) {
+    const playClickSound = useClickSound();
+    const tasks = [
+        { id: 'email' as const, icon: 'email' as const, label: 'Email Investigation' },
+        { id: 'password' as const, icon: 'password' as const, label: 'Password Review' },
+        { id: 'data-classification' as const, icon: 'folder' as const, label: 'Data Classification' },
+    ];
+    return <nav className="navigation-window metal-frame" aria-label="Task navigation">
+    <h2 className="console-label">NAVIGATION</h2>
+    <div className="navigation-slots">{tasks.map(task => {
+            const count = dispatchQueue.filter(item => item.type === task.id).length;
+            const active = !isQueueOpen && currentTaskType === task.id;
+            return <button key={task.id} className={`navigation-task ${active ? 'is-active' : ''}`} aria-current={active ? 'page' : undefined} onClick={() => { playClickSound(); onSelectTask(task.id); }}>
+        <GameIcon name={task.icon} size={32}/><span>{task.label}</span>{count > 0 && <span className="notification-badge">{count}</span>}
+      </button>;
+        })}<div className="reserved-task-slot" aria-hidden="true"/></div>
+  </nav>;
 }
