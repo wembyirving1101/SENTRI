@@ -1,0 +1,263 @@
+/* A shared low viewing angle: objects rise above the desk's rear edge. */
+.desk-surface {
+  height: 180px;
+  flex: 0 0 180px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 26px;
+  padding: 0 12px 18px;
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
+}
+
+.desk-surface::before {
+  content: '';
+  position: absolute;
+  inset: 35px 0 0;
+  z-index: -1;
+  border-top: 3px solid #25251e;
+  border-radius: 6px 6px 0 0;
+  background:
+    repeating-linear-gradient(178deg, transparent 0 12px, #a28b5710 13px 14px, transparent 15px 29px),
+    repeating-linear-gradient(0deg, transparent 0 67px, #24221bb0 68px 70px, #9a835128 71px 73px),
+    url('/design/grain.svg'),
+    linear-gradient(#4c4332, #5c4e38 60%, #50412e);
+  box-shadow: inset 0 2px #99815b60, inset 0 9px 12px #17180f44;
+}
+
+.desk-surface::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 10px;
+  background: linear-gradient(#7b6444, #453825 30%, #29251c);
+  border-top: 2px solid #a48b5d44;
+  pointer-events: none;
+}
+
+.handbook-object {
+  position: relative;
+  width: 285px;
+  height: 182px;
+  flex-shrink: 0;
+  background: none;
+  border: 0;
+  transform: translateY(2px);
+  filter: drop-shadow(5px 8px 2px #17160eb0);
+}
+
+.handbook-object img {
+  position: absolute;
+  left: 0;
+  bottom: -12px;
+  width: 100%;
+  height: 305px;
+  object-fit: contain;
+  object-position: center bottom;
+  image-rendering: pixelated;
+  transform: perspective(900px) rotateX(43deg);
+  transform-origin: center bottom;
+}
+
+.handbook-object:hover {
+  filter: brightness(1.05) drop-shadow(5px 8px 2px #17160eb0);
+}
+
+.desk-device {
+  position: relative;
+  flex-shrink: 0;
+  isolation: isolate;
+  filter: drop-shadow(5px 9px 2px #17170fb0);
+}
+
+/* The lower shell is a solid slab with a lit top and a dark vertical lip. */
+.device-base {
+  position: absolute;
+  inset: auto 0 0;
+  height: 27px;
+  border: 2px solid #151c1c;
+  border-radius: 3px;
+  background: linear-gradient(#646357 0 6px, #41453f 7px 13px, #292e2c 14px);
+  clip-path: polygon(2% 0, 98% 0, 100% 45%, 100% 100%, 0 100%, 0 45%);
+  box-shadow: inset 0 -3px #151a1b, inset 0 2px #93908066;
+}
+
+.device-face {
+  position: absolute;
+  left: 5px;
+  right: 5px;
+  top: 25px;
+  bottom: 13px;
+  border-radius: 4px;
+  background-color: #303634;
+  box-shadow: inset 0 0 0 1px #73776b, inset 0 0 0 4px #3c423d,
+    inset 0 0 0 6px #1c2424, 0 3px 0 #131a1b;
+  transform: perspective(900px) rotateX(12deg);
+  transform-origin: center bottom;
+}
+
+/* The visible upper casing recedes toward the same centered vanishing point. */
+.device-roof {
+  position: absolute;
+  top: 0;
+  left: 5px;
+  right: 5px;
+  height: 30px;
+  clip-path: polygon(2% 0, 98% 0, 100% 100%, 0 100%);
+  border-top: 3px solid #8b8a7880;
+  border-bottom: 3px solid #171f20;
+  background: linear-gradient(#454a43, #55584e);
+  box-shadow: inset 0 3px #252b29, inset 0 -3px #7a7d6c77;
+}
+
+.device-vents {
+  position: absolute;
+  width: 31px;
+  height: 7px;
+  bottom: 9px;
+  right: 17px;
+  background: repeating-linear-gradient(90deg, #121c1c 0 3px, transparent 3px 6px);
+  border-bottom: 1px solid #777d6b77;
+}
+
+.desk-monitor {
+  width: 327px;
+  height: 172px;
+}
+
+.monitor-face {
+  top: 0;
+  left: 11px;
+  right: 11px;
+  bottom: 17px;
+  padding: 14px;
+  transform: perspective(900px) rotateX(8deg);
+  border-radius: 9px 9px 5px 5px;
+  background: linear-gradient(120deg,#454a43,#2d3431),url('/design/grain.svg');
+}
+
+.monitor-screen {
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(ellipse,#26322e,#15201e);
+  border: 3px solid #0e1718;
+  border-radius: 5px;
+  box-shadow: inset 0 0 12px #0008,0 0 0 2px #5d635780;
+  padding: 5px 12px 10px;
+  text-align: center;
+}
+
+.monitor-screen h2 { color: #99a780; font-size: 24px; line-height: 1.1; }
+.monitor-screen p { font-size: 30px; margin: 6px 0 8px; line-height: 1.1; }
+.daily-task-track { position: relative; height: 25px; border: 2px solid #989e8a; border-radius: 3px; overflow: hidden; }
+.daily-task-track>div { height: 100%; background: #89976e; }
+.daily-task-track i { position: absolute; top: 0; bottom: 0; width: 1px; background: #9fa58c; }
+
+.desk-organizer {
+  flex: 1;
+  min-width: 340px;
+  max-width: 510px;
+  height: 150px;
+}
+
+.organizer-face {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px 22px;
+  background: linear-gradient(#333b37, #424740);
+}
+
+.organizer-slot {
+  position: absolute;
+  top: 9px;
+  left: 41%;
+  right: 41%;
+  height: 5px;
+  background: #192221;
+  border: 1px solid #73796a;
+  border-radius: 3px;
+  box-shadow: 0 2px #202926;
+}
+
+.desk-message-button {
+  flex: 1;
+  min-width: 0;
+  height: 68px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 25px;
+  box-shadow: inset 0 2px #777c6955, inset 0 -3px #0e1719, 0 2px #171f1c;
+}
+
+.desk-message-button .notification-badge { position: absolute; right: 7px; top: 5px; width: 24px; min-width: 24px; height: 24px; font-size: 15px; }
+
+.coffee-object {
+  position: relative;
+  width: 185px;
+  height: 179px;
+  flex-shrink: 0;
+  filter: drop-shadow(6px 8px 2px #17160eaa);
+}
+
+.coffee-object>img {
+  max-width: none;
+  position: absolute;
+  width: 145%;
+  height: 145%;
+  left: -25%;
+  bottom: -26px;
+  object-fit: contain;
+  object-position: center bottom;
+  image-rendering: pixelated;
+}
+
+.music-device { width: 145px; height: 137px; }
+.music-control {
+  width: auto;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 10px;
+  gap: 6px;
+  font-size: 22px;
+}
+.music-control:hover { background-color: #354239; }
+.music-control .device-vents { width: 24px; right: calc(50% - 12px); bottom: 6px; height: 4px; }
+
+.end-day-device { width: 268px; height: 143px; }
+.end-day-control {
+  width: auto;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px 15px;
+}
+.end-day-control .device-vents { right: 10px; width: 13px; bottom: 13px; }
+.end-day-button {
+  width: 100%;
+  height: 43px;
+  flex-shrink: 0;
+  background: #b7af98;
+  border: 3px solid #141e20;
+  color: #242b27;
+  box-shadow: inset 0 3px #dfd4b977, inset 0 -3px #827b6988, 0 3px 0 #101919;
+  font-size: 28px;
+  border-radius: 3px;
+}
+.end-day-button:hover:enabled { background: #c1bba4; }
+.end-day-button:active:enabled, .desk-message-button:active { transform: translateY(2px); box-shadow: inset 0 2px #1118; }
+.end-day-control>span { font-size: 24px; background: #18231f; color: #a5b18e; padding: 1px 17px; border: 2px solid #121b1b; box-shadow: inset 0 2px 3px #0008,0 1px #6c756455; border-radius: 3px; line-height: 1; }
+
