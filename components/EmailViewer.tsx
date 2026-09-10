@@ -132,6 +132,7 @@ export default function EmailViewer({
           </div>
 
           {/* Email Body Content */}
+          {email.workContext && <div className="px-6 pt-4 text-sm leading-relaxed text-[#000000]"><strong>Work context:</strong> {email.workContext}</div>}
           <div className={`px-6 py-6 text-base leading-relaxed whitespace-pre-wrap ${isEmbedded ? 'text-[#000000]' : 'text-foreground'}`}>
             {email.body}
           </div>

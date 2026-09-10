@@ -5,10 +5,13 @@ import { cn } from '@/lib/utils'
 import { useClickSound } from '@/lib/useClickSound'
 
 interface InvestigationPanelProps {
-  investigationList: InvestigationCategory[]
+  investigationList: (Omit<InvestigationCategory, 'id'> & { id: string })[]
   onMakeDecision: () => void
   onCheckboxChange?: (categoryId: string) => void
   onVerify?: () => void
+  disabled?: boolean
+  attemptLabel?: string
+  supportingEvidence?: boolean
 }
 
 export default function InvestigationPanel({
@@ -16,6 +19,9 @@ export default function InvestigationPanel({
   onMakeDecision,
   onCheckboxChange,
   onVerify,
+  disabled = false,
+  attemptLabel,
+  supportingEvidence = false,
 }: InvestigationPanelProps) {
   const playClickSound = useClickSound()
   const checkedCount = investigationList.filter((item) => item.checked).length
@@ -31,7 +37,7 @@ export default function InvestigationPanel({
           </h2>
         </div>
         <p className="text-sm text-muted-foreground font-bold">
-          {checkedCount}/{investigationList.length}
+            {attemptLabel ?? `${checkedCount}/${investigationList.length}`}
         </p>
       </div>
 
@@ -61,12 +67,12 @@ export default function InvestigationPanel({
               >
                 <div className="flex gap-4 flex-1 min-w-0">
                   <div className="flex-shrink-0">
-                    {iconMap[item.id as keyof typeof iconMap]}
+                    {iconMap[item.id as keyof typeof iconMap] ?? <FileText size={36} className="text-[#999]" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-lg font-bold text-[#000000] mb-1">{item.label}</p>
                     <p className="text-base text-[#5a5a5a] mb-2">{item.description}</p>
-                    {item.hasEvidence && (
+                    {item.hasEvidence && !supportingEvidence && (
                       <p className="text-base font-semibold text-[#7a9d6d]">✓ Evidence collected</p>
                     )}
                   </div>
@@ -74,6 +80,8 @@ export default function InvestigationPanel({
                 <div className="flex-shrink-0">
                   <input
                     type="checkbox"
+                    disabled={disabled}
+                    aria-label={`Use ${item.label} as evidence`}
                     checked={item.checked}
                     onChange={() => {
                       playClickSound()
@@ -113,13 +121,14 @@ export default function InvestigationPanel({
             Evidence Collected
           </p>
           <p className="text-base text-[#000000] mb-3">
-            Review the clues you&apos;ve found to build your case.
+            {supportingEvidence ? 'Select the records supporting your decision, including evidence that a message is legitimate. Reading does not spend a submission.' : 'Review the clues you’ve found to build your case.'}
           </p>
         </div>
 
         {/* Make Decision Button */}
         <div className={cn(borderVariants({ variant: 'divider' }), 'border-t px-3 py-3')}>
           <button
+            disabled={disabled}
             onClick={() => {
               playClickSound()
               onMakeDecision()

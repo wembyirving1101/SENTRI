@@ -23,9 +23,7 @@ export function getDatabase() {
       max: 10,
     })
 
-  if (process.env.NODE_ENV !== 'production') {
-    globalForDatabase.sentricolPool = pool
-  }
+  globalForDatabase.sentricolPool = pool
 
   return pool
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { isDatabaseConfigured, withTransaction } from '@/lib/db'
+import { TRAINING_CONFIG } from '@/lib/trainingConfig'
 
 interface AttemptRequest {
   attemptId?: string
@@ -53,15 +54,16 @@ export async function POST(request: Request) {
       )
       const context = contextResult.rows[0]
       if (!context) return null
+      if (TRAINING_CONFIG.phaseProgressionEnabled && context.incident_code === 'email') return { emailCourseRequired: true as const }
 
       const decisionMatches =
         decision.trim().toLowerCase() === context.correct_decision.trim().toLowerCase()
       const investigated = [...new Set(body.investigatedCategories ?? [])]
       const content = context.raw_content
       const required = content.requiredInvestigationCategories ?? (content.investigationStates
-        ? Object.keys(content.investigationStates).filter((key) => content.investigationStates?.[key] === 'suspicious') : undefined)
+        ? Object.keys(content.investigationStates).filter(key => content.investigationStates?.[key] === 'suspicious') : undefined)
       const isCorrect = decisionMatches && (context.incident_code !== 'email' || !required ||
-        (required.length === investigated.length && required.every((key) => investigated.includes(key))))
+        (required.length === investigated.length && required.every(key => investigated.includes(key))))
       const attemptNumber = Number.isInteger(body.attemptNumber) ? Math.max(1, Math.min(4, body.attemptNumber!)) : 1
       const progressDelta = context.incident_code === 'email'
         ? (isCorrect ? (attemptNumber === 1 ? 5 : attemptNumber === 2 ? 2 : 0) : attemptNumber >= 4 ? -1 : 0)
@@ -239,6 +241,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Attempt not found or already completed' }, { status: 404 })
     }
 
+    if ('emailCourseRequired' in result) return NextResponse.json({ error: 'Resume email investigation through the email course.' }, { status: 409 })
     return NextResponse.json(result)
   } catch (error) {
     console.error('Attempt recording failed', error)

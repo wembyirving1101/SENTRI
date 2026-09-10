@@ -32,6 +32,7 @@ export default function TaskDetailsPanel({ selectedQueueItem: item, onStartTask 
           <div className="classification-levels">{classificationLevels.map(level => <div className={`classification-card classification-${level.id}`} key={level.id}><GameIcon name={level.icon} size={36}/><div><strong>{level.title}</strong><p>{level.description}</p></div></div>)}</div>
           <button className="console-button detail-action" onClick={() => setPreviewId(item.id)}>VIEW DOCUMENT</button>
         </> : <div className="task-description"><h4 className="detail-label">{email ? 'EMAIL DETAILS' : 'PASSWORD DETAILS'}</h4><h3>{email?.subject ?? password?.department}</h3><p>{email ? 'Examine the sender, links, attachments and message before making your decision.' : 'Review the submitted password against company policy before approving access.'}</p>{email?.attachments?.length ? <p>{email.attachments.length} attachment{email.attachments.length === 1 ? '' : 's'} to review</p> : null}</div>}
+        {item.courseInfo && <p className="text-base leading-relaxed">{item.courseInfo.phase.toUpperCase()}{item.courseInfo.recovery ? ' · RECOVERY' : ''}<br />{item.courseInfo.submissionsUsed} / {item.courseInfo.attemptLimit} submissions used<br />{item.courseInfo.nextRewardExp.toLocaleString(undefined, { maximumFractionDigits: 2 })} EXP available on the next pass</p>}
         <div className="start-task-area"><button className="console-button detail-action" onClick={() => onStartTask(item)}>START TASK</button></div>
       </>}
     </div>

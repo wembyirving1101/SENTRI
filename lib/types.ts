@@ -11,8 +11,10 @@ export interface Email {
   body: string
   timestamp: string
   attachments: Attachment[]
-  isLegitimate: boolean
-  threat: 'phishing' | 'malware' | 'social-engineering' | 'legitimate'
+  // Live course emails omit answer keys; legacy preview fixtures may include them.
+  isLegitimate?: boolean
+  threat?: 'phishing' | 'malware' | 'social-engineering' | 'legitimate'
+  workContext?: string
   clues: EmailClues
   redFlags?: string[]
   requiredInvestigationCategories?: InvestigationId[]
@@ -55,7 +57,8 @@ export interface DispatchItem {
   priority?: 'HIGH' | 'MEDIUM' | 'LOW'
   matchScore?: number
   matchReason?: Record<string, unknown>
-  source?: 'database' | 'mock'
+  source?: 'database' | 'mock' | 'course'
+  courseInfo?: { phase: string; attemptLimit: number; submissionsUsed: number; nextRewardExp: number; recovery: boolean }
   id: string
   type: TaskType
   timestamp: number

@@ -35,6 +35,9 @@ import ContactModal from '@/components/ContactModal'
 import SettingsModal from '@/components/SettingsModal'
 import { fetchPlayerProfile, requestPersonalizedTask, submitTaskDecision } from '@/lib/sentricolApi'
 import { DispatchItem } from '@/lib/types'
+import { useEmailCourse } from '@/lib/useEmailCourse'
+import CourseFeedbackModal from '@/components/CourseFeedbackModal'
+import { TRAINING_CONFIG, regularTaskType } from '@/lib/trainingConfig'
 
 const previewQueue: DispatchItem[] = [
   { id: 'preview-email', type: 'email', priority: 'HIGH', timestamp: 0, payload: { ...mockEmails[0], id: 'preview-email', subject: 'Invoice from “ACME Corp”', from: 'Vendor', timestamp: '09:15' } },
@@ -43,6 +46,11 @@ const previewQueue: DispatchItem[] = [
 ]
 
 export default function DispatchConsole({ designPreview = false }: { designPreview?: boolean }) {
+  const progressionEnabled = TRAINING_CONFIG.phaseProgressionEnabled && !designPreview
+  const emailCourse = useEmailCourse(progressionEnabled)
+  const courseRef = useRef(emailCourse.course)
+  courseRef.current = emailCourse.course
+  const [courseEvidence, setCourseEvidence] = useState<string[]>([])
   const demoUserCode = process.env.NEXT_PUBLIC_DEMO_USER_CODE ?? 'usr_0001'
   const [connectionError, setConnectionError] = useState<string | null>(null)
   const savingRef = useRef(false)
@@ -114,10 +122,44 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
   const performanceRef = useRef(investigationPerformance)
   performanceRef.current = investigationPerformance
   const knownAssignmentsRef = useRef<Set<string>>(new Set())
-  const taskSequence = ['email', 'email', 'data-classification', 'email', 'email', 'password', 'email', 'data-classification', 'email', 'email'] as const
+
+  // Course assignments join the existing dispatch queue; the desk and other task
+  // panels retain their normal flow. One live email assignment exists at a time.
+  useEffect(() => {
+    const course = emailCourse.course
+    if (!course) return
+    const active = course.active
+    setGameState(prev => {
+      const otherTasks = prev.dispatchQueue.filter(item => item.type !== 'email')
+      const item: DispatchItem | null = active ? {
+        id: active.id, assignmentId: active.id, type: 'email', source: 'course', timestamp: Date.now(),
+        priority: course.phase === 'master' ? 'HIGH' : 'MEDIUM',
+        courseInfo: { phase: course.phase, attemptLimit: active.attemptLimit, submissionsUsed: active.submissionsUsed, nextRewardExp: active.nextRewardExp, recovery: active.recovery },
+        payload: {
+          id: active.id, from: active.public.from.split('<')[0].trim(),
+          senderDomain: active.public.from.match(/<([^>]+)>/)?.[1] ?? active.public.from,
+          to: active.public.to, subject: active.public.subject, body: active.public.body,
+          workContext: active.public.context, timestamp: 'Assigned', attachments: [],
+          clues: { senderProfile: '', linkDetails: [], attachmentAnalysis: '', languageAnalysis: '', contextAnalysis: '', requestAnalysis: '' },
+        },
+      } : null
+      return { ...prev, graduationProgress: course.progress,
+        dispatchQueue: item ? [item, ...otherTasks] : otherTasks,
+        currentEmailId: active?.id ?? null,
+      }
+    })
+  }, [emailCourse.course])
+
+  useEffect(() => { setCourseEvidence([]); setShowDecisionModal(false) }, [emailCourse.course?.active?.id])
+  useEffect(() => { databaseExhaustedRef.current = false }, [emailCourse.course?.phase])
+  useEffect(() => {
+    if (progressionEnabled) return
+    setGameState(prev => ({ ...prev, dispatchQueue: prev.dispatchQueue.filter(item => item.source !== 'course') }))
+  }, [progressionEnabled])
 
   const createMockDispatchItem = (): DispatchItem | null => {
-    const type = taskSequence[gameStateRef.current.tasksGeneratedToday % taskSequence.length]
+    const type = !progressionEnabled ? regularTaskType(gameStateRef.current.tasksGeneratedToday)
+      : courseRef.current?.phase !== 'easy' && gameStateRef.current.tasksGeneratedToday % 2 ? 'data-classification' : 'password'
     if (type !== 'email') {
       const catalog = type === 'password' ? mockPasswords : mockDataClassifications
       const available = catalog.filter(item => !gameStateRef.current.dispatchQueue.some(active => active.id === item.id))
@@ -152,11 +194,14 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
 
   const createNextDispatchItem = async (): Promise<DispatchItem | null> => {
     if (designPreview) return createMockDispatchItem()
+    if (courseRef.current?.status === 'graduated' || courseRef.current?.status === 'needs-follow-up') return null
     if (databaseExhaustedRef.current) return null
     setIsLoadingTask(true)
     try {
       await pendingSave.current
       const item = await requestPersonalizedTask(demoUserCode, {
+        taskType: !progressionEnabled ? regularTaskType(gameStateRef.current.tasksGeneratedToday)
+          : courseRef.current?.phase && courseRef.current.phase !== 'easy' && gameStateRef.current.tasksGeneratedToday % 2 ? 'data-classification' : 'password',
         knownAssignmentIds: [...knownAssignmentsRef.current],
       })
       setConnectionError(null)
@@ -171,8 +216,12 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
           setConnectionError(null)
           return createMockDispatchItem()
         }
-        databaseExhaustedRef.current = true
-        setConnectionError('No more eligible database tasks are available for this user.')
+        // Only a phase's optional practice catalog can be exhausted globally.
+        // In regular mode, retry the same requested slot as content becomes available.
+        databaseExhaustedRef.current = progressionEnabled
+        // Regular mode must explain an unavailable slot instead of showing a
+        // permanently empty queue while silently retrying the same task type.
+        setConnectionError(progressionEnabled ? null : error.message)
         return null
       }
       setConnectionError(error instanceof Error ? error.message : 'Unable to load the next task')
@@ -188,7 +237,7 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
     if (designPreview || !item?.attemptId) return
     pendingSave.current = submitTaskDecision({ attemptId: item.attemptId, decision, investigatedCategories: categories, attemptNumber })
       .then((result) => {
-        if (result) setGameState((prev) => ({ ...prev, graduationProgress: result.graduationPercentage }))
+        if (result) setGameState((prev) => ({ ...prev, graduationProgress: courseRef.current?.progress ?? result.graduationPercentage }))
         setConnectionError(null)
       })
     void pendingSave.current.catch(() => setConnectionError('Your answer could not be saved. Refresh to resume this task.'))
@@ -197,9 +246,9 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
   useEffect(() => {
     if (designPreview) return
     void fetchPlayerProfile(demoUserCode).then((profile) => {
-      setGameState((prev) => ({ ...prev, graduationProgress: profile.graduationPercentage }))
+      setGameState((prev) => ({ ...prev, graduationProgress: courseRef.current?.progress ?? (progressionEnabled ? 0 : profile.graduationPercentage) }))
     }).catch((error) => setConnectionError(error.message))
-  }, [demoUserCode, designPreview])
+  }, [demoUserCode, designPreview, progressionEnabled])
 
   // Update time every minute (client-side only to avoid hydration mismatch)
   useEffect(() => {
@@ -221,7 +270,8 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
     let timer: ReturnType<typeof setTimeout>
     const generate = async () => {
       if (cancelled) return
-      if (!generationRef.current && gameStateRef.current.tasksGeneratedToday < 20) {
+      if (!generationRef.current && gameStateRef.current.tasksGeneratedToday < 20 &&
+          (!progressionEnabled || gameStateRef.current.dispatchQueue.filter(item => item.type !== 'email').length < 2)) {
         generationRef.current = true
         try {
           const nextTask = await createNextDispatchItem()
@@ -251,9 +301,10 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
     }
     void generate()
     return () => { cancelled = true; clearTimeout(timer) }
-  }, [designPreview])
+  }, [designPreview, progressionEnabled])
 
   const completeQueuedTask = (id: string | null) => {
+    databaseExhaustedRef.current = false
     setGameState(prev => {
       const queue = prev.dispatchQueue.filter(item => item.id !== id)
       const next = queue[0]
@@ -390,8 +441,21 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
     }
   }
 
-  const handleMakeDecision = (decision: 'legitimate' | 'phishing') => {
+  const handleMakeDecision = async (decision: 'legitimate' | 'phishing') => {
     if (!currentEmail) return
+
+    const active = emailCourse.course?.active
+    if (!designPreview && active?.id === currentEmail.id) {
+      if (emailCourse.busy || emailCourse.error || active.feedback) return
+      setShowDecisionModal(false)
+      const response = await emailCourse.send({ action: 'submit', requestId: crypto.randomUUID(), answer: {
+        assignmentId: active.id, decision, evidenceIds: courseEvidence,
+      } })
+      if (response?.course.active?.feedback?.passed) playCorrectSound()
+      else if (response) playWrongSound()
+      return
+    }
+    if (progressionEnabled) return
 
     const suspiciousIds = currentEmail.requiredInvestigationCategories ?? Object.entries(currentEmail.investigationStates ?? {})
       .filter(([, state]) => state === 'suspicious')
@@ -399,8 +463,8 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
     const suspicious = new Set(suspiciousIds)
     const checked = new Set(investigationList.filter((item) => item.checked).map((item) => item.id))
     const checklistMatches = suspicious.size === checked.size && [...suspicious].every((id) => checked.has(id))
-    const decisionMatches = (decision === 'phishing' && !currentEmail.isLegitimate) ||
-      (decision === 'legitimate' && currentEmail.isLegitimate)
+    const decisionMatches = (decision === 'phishing' && currentEmail.isLegitimate === false) ||
+      (decision === 'legitimate' && currentEmail.isLegitimate === true)
     const hasChecklist = currentEmail.requiredInvestigationCategories !== undefined || currentEmail.investigationStates !== undefined
     const isCorrect = decisionMatches && (!hasChecklist || checklistMatches)
     const attemptNumber = isCorrect ? emailAttempt + 1 : Math.min(4, emailAttempt + 1)
@@ -486,7 +550,7 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
     // Update progress immediately
     setGameState((prev) => ({
       ...prev,
-      graduationProgress: Math.min(100, prev.graduationProgress + progressIncrease),
+      graduationProgress: !progressionEnabled ? Math.min(100, prev.graduationProgress + progressIncrease) : prev.graduationProgress,
     }))
   }
 
@@ -523,7 +587,7 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
     // Update progress immediately
     setGameState((prev) => ({
       ...prev,
-      graduationProgress: Math.min(100, prev.graduationProgress + progressIncrease),
+      graduationProgress: !progressionEnabled ? Math.min(100, prev.graduationProgress + progressIncrease) : prev.graduationProgress,
     }))
   }
 
@@ -601,9 +665,11 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
       {designPreview && <span className="design-preview-label">DESIGN PREVIEW · SAMPLE DATA</span>}
       {/* Header - Fixed height */}
       {connectionError && <div role="alert" className="connection-notice"><span>{connectionError}</span><button onClick={() => window.location.reload()}>RETRY</button></div>}
+      {emailCourse.error && <div role="alert" className="connection-notice"><span>{emailCourse.error}</span><button disabled={emailCourse.busy} onClick={() => void emailCourse.retry()}>RESUME SAVED COURSE</button></div>}
       <Header 
-        currentTime={displayTime} 
+        currentTime={displayTime}
         graduationProgress={gameState.graduationProgress}
+        progressLabel={emailCourse.course ? `TRUST LEVEL · ${emailCourse.course.phase.toUpperCase()} · ${Math.floor(emailCourse.course.exp)} / 1,000 EXP` : undefined}
         onSettingsClick={() => setShowSettings(true)}
         onHelpClick={() => setShowHelp(true)}
       />
@@ -626,7 +692,7 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
           <button onClick={() => setShowDispatchQueue(true)} className={`view-queue-button metal-frame ${showDispatchQueue ? 'is-active' : ''}`} aria-current={showDispatchQueue ? 'page' : undefined}>
             <GameIcon name="file" size={32} /><span>VIEW QUEUE</span><span>{gameState.dispatchQueue.length}</span>
           </button>
-          <SentriPanel isQueueOpen={showDispatchQueue} />
+          <SentriPanel isQueueOpen={showDispatchQueue} courseStatus={emailCourse.course?.status} courseMessage={emailCourse.course?.message} onResumeCourse={() => void emailCourse.send({ action: 'resume' })} />
         </div>
 
         {/* Center Content - Task-specific UI or Dispatch Queue */}
@@ -680,10 +746,15 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
             <TaskDetailsPanel selectedQueueItem={gameState.dispatchQueue.find(q => q.id === selectedQueueItemId) || null} onStartTask={handleStartQueueTask} />
           ) : gameState.currentTaskType === 'email' ? (
             <InvestigationPanel
-              investigationList={investigationList}
+              investigationList={!designPreview && emailCourse.course?.active ? emailCourse.course.active.public.evidence.map(e => ({
+                id: e.id, label: e.label, description: e.detail, checked: courseEvidence.includes(e.id), hasEvidence: true,
+              })) : investigationList}
               onMakeDecision={() => setShowDecisionModal(true)}
-              onCheckboxChange={handleCheckboxChange}
+              onCheckboxChange={!designPreview && emailCourse.course?.active ? id => setCourseEvidence(prev => prev.includes(id) ? prev.filter(e => e !== id) : [...prev, id]) : handleCheckboxChange}
               onVerify={() => setShowContactModal(true)}
+              disabled={progressionEnabled && (!emailCourse.course?.active || emailCourse.busy || Boolean(emailCourse.error) || Boolean(emailCourse.course.active.feedback))}
+              attemptLabel={emailCourse.course?.active ? `${emailCourse.course.active.submissionsUsed}/${emailCourse.course.active.attemptLimit} USED` : undefined}
+              supportingEvidence={progressionEnabled}
             />
           ) : gameState.currentTaskType === 'password' ? (
             <PasswordPolicyPanel />
@@ -710,6 +781,11 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
       )}
 
       {/* Feedback Modal */}
+      {emailCourse.course?.active?.feedback && <CourseFeedbackModal active={emailCourse.course.active} busy={emailCourse.busy || Boolean(emailCourse.error)} onContinue={async () => {
+        const active = emailCourse.course!.active!
+        const result = await emailCourse.send({ action: 'acknowledge', assignmentId: active.id, attempt: active.feedback!.attempt })
+        if (result && active.feedback!.terminal) completeQueuedTask(active.id)
+      }} />}
       {showFeedback && currentEmail && lastDecision && (
           <FeedbackModal
             email={currentEmail}
@@ -755,7 +831,16 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
         />
       )}
 
-      {showHelp && <div className="console-modal-backdrop" onClick={() => setShowHelp(false)}><section className="console-modal metal-frame" role="dialog" aria-modal="true" aria-labelledby="help-title" onClick={event => event.stopPropagation()}><div className="modal-title"><h2 id="help-title">WELCOME TO YOUR DISPATCH CONSOLE</h2><button className="console-button" aria-label="Close help" onClick={() => setShowHelp(false)}>✕</button></div><div className="paper-surface handbook-pages"><p>Open View Queue to see your assignments. Select a task, review its details, then choose Start Task.</p><p>Investigate emails, review passwords, and classify documents. SENTRI will guide you as you collect evidence and make a decision.</p><p>Your trust level reflects your training progress. The markers show milestones at 25%, 50%, and 75%.</p><p>Use the handbook for company policies and Notes to record your observations.</p></div></section></div>}
+      {showHelp && <div className="console-modal-backdrop" onClick={() => setShowHelp(false)}><section className="console-modal metal-frame" role="dialog" aria-modal="true" aria-labelledby="help-title" onClick={event => event.stopPropagation()}><div className="modal-title"><h2 id="help-title">WELCOME TO YOUR DISPATCH CONSOLE</h2><button className="console-button" aria-label="Close help" onClick={() => setShowHelp(false)}>✕</button></div><div className="paper-surface handbook-pages">
+        <p>Open View Queue to see your assignments. Select a task, review its details, then choose Start Task.</p>
+        {progressionEnabled ? <>
+          <p>Email EXP uses four phases of 250 EXP: Easy, Normal, Hard and Master. Submission limits are 3, 2, 2 and 1. Reading evidence is free; select the records supporting your decision before submitting.</p>
+          <p>A pass requires the right decision, at least 80% performance and all critical checks. Passing on your first, second or third submission earns 100%, 70% or 40% of the available EXP.</p>
+          <p>Fresh recovery cases can restore missed EXP within your company’s allowance. Graduate by earning all 1,000 EXP and passing the required objectives, including Master. Password and data-classification practice stay available but do not add to email-course EXP.</p>
+          {emailCourse.course && <p>Company plan: approximately {emailCourse.course.targetMinutes} minutes. Recovery cases used: {emailCourse.course.recoveryUsed}/{emailCourse.course.recoveryAllowance}. Actual completion time varies.</p>}
+        </> : <p>Regular practice has no progression phases. Tasks follow a 70% email investigation, 20% data classification and 10% password review mix. All three task types are available from the start.</p>}
+        <p>Use the handbook for company policies and Notes to record your observations.</p>
+      </div></section></div>}
 
       {/* Settings Modal */}
       <SettingsModal

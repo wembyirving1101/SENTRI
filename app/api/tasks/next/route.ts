@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { isDatabaseConfigured, withTransaction } from '@/lib/db'
+import { TRAINING_CONFIG, regularTaskType } from '@/lib/trainingConfig'
 
 interface NextTaskRequest {
   userCode?: string
@@ -55,12 +56,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'userCode is required' }, { status: 400 })
   }
 
+  if (TRAINING_CONFIG.phaseProgressionEnabled && body.taskType === 'email') {
+    return NextResponse.json({ error: 'Email investigation now uses /api/email-course.' }, { status: 409 })
+  }
+
+
   if ((body.taskType && !['email', 'password', 'data-classification'].includes(body.taskType)) ||
       (body.knownAssignmentIds !== undefined && (!Array.isArray(body.knownAssignmentIds) || body.knownAssignmentIds.some(id => typeof id !== 'string')))) {
     return NextResponse.json({ error: 'Invalid task generation options' }, { status: 400 })
   }
 
   try {
+    const taskType = body.taskType ?? (TRAINING_CONFIG.phaseProgressionEnabled ? null : regularTaskType(Math.floor(Math.random() * 10)))
     const result = await withTransaction(async (client) => {
       // Serialize assignment creation for this user, including duplicate mount requests.
       await client.query('SELECT user_id FROM users WHERE user_code = $1 FOR UPDATE', [body.userCode])
@@ -87,12 +94,13 @@ export async function POST(request: Request) {
            JOIN tasks t ON t.task_id = c.task_id
            JOIN incident_types it ON it.incident_type_id = t.incident_type_id
           WHERE u.user_code = $1
+            AND ($4::boolean = false OR it.incident_code <> 'email')
             AND ta.status IN ('assigned', 'started')
             AND NOT (ta.assignment_id::text = ANY($2::text[]))
             AND ($3::text IS NULL OR it.incident_code = $3)
           ORDER BY ta.assignment_id DESC, a.attempt_number DESC
           LIMIT 1`,
-        [body.userCode, body.knownAssignmentIds ?? [], body.taskType ?? null],
+        [body.userCode, body.knownAssignmentIds ?? [], taskType, TRAINING_CONFIG.phaseProgressionEnabled],
       )
 
       const activeTask = activeResult.rows[0]
@@ -127,13 +135,15 @@ export async function POST(request: Request) {
                     'selection', 'lowest ability weighted by case tags'
                   ) AS match_reason
              FROM player p
-             JOIN tasks t ON t.is_active = true AND t.difficulty <= p.unlocked_difficulty
+             JOIN tasks t ON t.is_active = true
+                         AND ($3::boolean = false OR t.difficulty <= p.unlocked_difficulty)
              JOIN incident_types it ON it.incident_type_id = t.incident_type_id
              JOIN cases c ON c.task_id = t.task_id AND c.review_status = 'approved'
              LEFT JOIN case_tags ct ON ct.case_id = c.case_id
              LEFT JOIN user_skill_profiles usp
                     ON usp.user_id = p.user_id AND usp.tag_id = ct.tag_id
             WHERE ($2::text IS NULL OR it.incident_code = $2)
+              AND ($3::boolean = false OR it.incident_code <> 'email')
               AND (
                     NOT EXISTS (SELECT 1 FROM task_target_departments td WHERE td.task_id = t.task_id)
                     OR EXISTS (
@@ -162,7 +172,7 @@ export async function POST(request: Request) {
            FROM candidates
           ORDER BY match_score DESC, random()
           LIMIT 1`,
-        [body.userCode, body.taskType ?? null],
+        [body.userCode, taskType, TRAINING_CONFIG.phaseProgressionEnabled],
       )
 
       const candidate = candidateResult.rows[0]
@@ -189,7 +199,7 @@ export async function POST(request: Request) {
 
     if (!result) {
       return NextResponse.json(
-        { error: 'No eligible personalized task is available' },
+        { error: `No eligible ${taskType ?? 'practice'} task is available for this learner.` },
         { status: 404 },
       )
     }
