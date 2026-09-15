@@ -10,6 +10,7 @@
   position: relative;
   isolation: isolate;
   overflow: visible;
+  clip-path: inset(-100px -20px 0);
 }
 
 .desk-surface::before {
@@ -23,7 +24,7 @@
     repeating-linear-gradient(178deg, transparent 0 12px, #a28b5710 13px 14px, transparent 15px 29px),
     repeating-linear-gradient(0deg, transparent 0 67px, #24221bb0 68px 70px, #9a835128 71px 73px),
     url('/design/grain.svg'),
-    linear-gradient(#4c4332, #5c4e38 60%, #50412e);
+    linear-gradient(#302c23, #3b3327 60%, #31291f);
   box-shadow: inset 0 2px #99815b60, inset 0 9px 12px #17180f44;
 }
 
@@ -34,32 +35,33 @@
   right: 0;
   bottom: 0;
   height: 10px;
-  background: linear-gradient(#7b6444, #453825 30%, #29251c);
+  background: linear-gradient(#5d4e36, #322b20 30%, #201e18);
   border-top: 2px solid #a48b5d44;
   pointer-events: none;
 }
 
 .handbook-object {
   position: relative;
-  width: 285px;
+  width: 300px;
   height: 182px;
   flex-shrink: 0;
   background: none;
   border: 0;
-  transform: translateY(2px);
+  transform: translateY(34px);
+  z-index: 1;
   filter: drop-shadow(5px 8px 2px #17160eb0);
 }
 
 .handbook-object img {
   position: absolute;
   left: 0;
-  bottom: -12px;
+  bottom: -18px;
   width: 100%;
-  height: 305px;
+  height: 226px;
   object-fit: contain;
   object-position: center bottom;
   image-rendering: pixelated;
-  transform: perspective(900px) rotateX(43deg);
+  transform: none;
   transform-origin: center bottom;
 }
 
@@ -71,7 +73,7 @@
   position: relative;
   flex-shrink: 0;
   isolation: isolate;
-  filter: drop-shadow(5px 9px 2px #17170fb0);
+  filter: drop-shadow(5px 8px 2px #17160eb0);
 }
 
 /* The lower shell is a solid slab with a lit top and a dark vertical lip. */
@@ -82,7 +84,7 @@
   border: 2px solid #151c1c;
   border-radius: 3px;
   background: linear-gradient(#646357 0 6px, #41453f 7px 13px, #292e2c 14px);
-  clip-path: polygon(2% 0, 98% 0, 100% 45%, 100% 100%, 0 100%, 0 45%);
+  clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 45%, 100% 100%, 0 100%, 0 45%);
   box-shadow: inset 0 -3px #151a1b, inset 0 2px #93908066;
 }
 
@@ -96,7 +98,7 @@
   background-color: #303634;
   box-shadow: inset 0 0 0 1px #73776b, inset 0 0 0 4px #3c423d,
     inset 0 0 0 6px #1c2424, 0 3px 0 #131a1b;
-  transform: perspective(900px) rotateX(12deg);
+  transform: none;
   transform-origin: center bottom;
 }
 
@@ -107,7 +109,7 @@
   left: 5px;
   right: 5px;
   height: 30px;
-  clip-path: polygon(2% 0, 98% 0, 100% 100%, 0 100%);
+  clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 100%, 0 100%);
   border-top: 3px solid #8b8a7880;
   border-bottom: 3px solid #171f20;
   background: linear-gradient(#454a43, #55584e);
@@ -129,30 +131,48 @@
   height: 172px;
 }
 
+.desk-monitor::before {
+  content: '';
+  position: absolute;
+  inset: 33px 8px 15px;
+  border: 3px solid #191d1b;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #56564c, #30372f 10% 90%, #45483e);
+  box-shadow: inset 0 2px #858271, 0 3px #161b18;
+}
+
+.desk-monitor .device-base {
+  height: 38px;
+  background: linear-gradient(#55564a 0 17px, #747263 18px 20px, #393e35 21px 29px, #252c26 30px);
+  clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 65%, 100% 100%, 0 100%, 0 65%);
+}
+
 .monitor-face {
   top: 0;
-  left: 11px;
-  right: 11px;
-  bottom: 17px;
-  padding: 14px;
-  transform: perspective(900px) rotateX(8deg);
+  left: 20px;
+  right: 20px;
+  bottom: 27px;
+  padding: 16px;
+  transform: none;
   border-radius: 9px 9px 5px 5px;
-  background: linear-gradient(120deg,#454a43,#2d3431),url('/design/grain.svg');
+  background: linear-gradient(120deg,#535348,#363c34);
+  box-shadow: inset 0 0 0 2px #777467, inset 0 0 0 6px #474b40,
+    inset 0 0 0 9px #30372f, 0 5px 0 #1d251f, 0 8px 0 #444a3d;
 }
 
 .monitor-screen {
   width: 100%;
   height: 100%;
-  background: radial-gradient(ellipse,#26322e,#15201e);
+  background: radial-gradient(ellipse at 50% 25%,#202b23,#111a15);
   border: 3px solid #0e1718;
   border-radius: 5px;
   box-shadow: inset 0 0 12px #0008,0 0 0 2px #5d635780;
-  padding: 5px 12px 10px;
-  text-align: center;
+  padding: 5px 10px 8px;
+  text-align: left;
 }
 
 .monitor-screen h2 { color: #99a780; font-size: 24px; line-height: 1.1; }
-.monitor-screen p { font-size: 30px; margin: 6px 0 8px; line-height: 1.1; }
+.monitor-screen p { color: #99a780; font-size: 27px; margin: 6px 0 8px; line-height: 1.1; }
 .daily-task-track { position: relative; height: 25px; border: 2px solid #989e8a; border-radius: 3px; overflow: hidden; }
 .daily-task-track>div { height: 100%; background: #89976e; }
 .daily-task-track i { position: absolute; top: 0; bottom: 0; width: 1px; background: #9fa58c; }
@@ -204,7 +224,7 @@
   width: 185px;
   height: 179px;
   flex-shrink: 0;
-  filter: drop-shadow(6px 8px 2px #17160eaa);
+  filter: drop-shadow(5px 8px 2px #17160eb0);
 }
 
 .coffee-object>img {
@@ -260,4 +280,3 @@
 .end-day-button:hover:enabled { background: #c1bba4; }
 .end-day-button:active:enabled, .desk-message-button:active { transform: translateY(2px); box-shadow: inset 0 2px #1118; }
 .end-day-control>span { font-size: 24px; background: #18231f; color: #a5b18e; padding: 1px 17px; border: 2px solid #121b1b; box-shadow: inset 0 2px 3px #0008,0 1px #6c756455; border-radius: 3px; line-height: 1; }
-

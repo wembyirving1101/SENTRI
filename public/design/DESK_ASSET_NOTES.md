@@ -2,7 +2,7 @@
 
 ## Desk perspective revision
 
-Built-in imagegen, reference-guided generation mode. Saved files: `handbook-depth.png` and `coffee-depth.png`. Both are transparent sprites used by DeskUI. The handbook is tilted in CSS, with the desk devices sharing a centered, low camera angle and upper-left lighting.
+Built-in imagegen, reference-guided generation mode. Saved files: `handbook-depth.png` and `coffee-depth.png`. Both are transparent sprites used by DeskUI. The handbook uses its drawn perspective without an additional CSS tilt. Desk devices share consistent receding casing edges and upper-left lighting.
 
 Final generation prompts:
 
@@ -13,4 +13,3 @@ Use case: stylized-concept. Create one standalone transparent game sprite of ONL
 ### cup-depth
 
 Use case: stylized-concept. Create one standalone transparent game sprite of ONLY the cream coffee mug from the reference image, reconstructed at high resolution with clean complete silhouette. Match reference camera and pixel art EXACTLY: camera straight ahead looking down about 20 degrees, not top-down, no sideways yaw. Tall upright cylindrical mug, its body taller than wide, small shallow coffee ellipse visible from this low angle with ellipse depth about 35% of width. Right handle, narrow shaded right face, cream left highlights, dark outlines and broad flat stepped pixel shading. Mug belongs beside a propped-up portrait handbook and desktop console in the same reference scene. Text on front exactly 'KAHFUNG' above 'IND.' and small dark building mark. Muted cream, grey brown coffee, upper-left light, dark lower-right rim. No stylized round toy proportions, no latte foam, no overhead perspective, no bright white, no blur. Transparent alpha background, one complete isolated mug, no desk, no rectangular screenshot patch, no other objects. Keep complete transparent padding all sides.
-

@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next'
 import ScaleManager from '@/components/ScaleManager'
 import './globals.css'
 import './desk.css'
+import './email-investigation.css'
 
 
 export const metadata: Metadata = {
