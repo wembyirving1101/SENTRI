@@ -1,0 +1,4 @@
+Full Name,Work Email,Employee ID,Department,Rank,Title,Employment Status
+Taylor Example,taylor@example.com,EMP-CSV-01,Operations,Staff,Coordinator,True
+Duplicate Example,jason@example.com,EMP-CSV-02,Finance,Staff,Analyst,True
+Incomplete Example,incomplete@example.com,EMP-CSV-03,,Manager,Team Lead,True

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import './workspace.css'
 
 export const metadata: Metadata = { title: 'SENTRI — Deployment', description: 'Company initialization and administration for SENTRI.' }
 export default function Layout({ children }: Readonly<{ children: React.ReactNode }>) {
