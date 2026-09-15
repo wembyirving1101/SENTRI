@@ -1,0 +1,51 @@
+.access-screen { width:1920px; height:1080px; padding:35px; background:#202221; color:#d4d2c5; font-family:'Courier New',monospace; }
+.access-frame { height:100%; border:2px solid #8b8e82; outline:1px solid #666b62; outline-offset:-13px; display:flex; flex-direction:column; align-items:center; background:radial-gradient(ellipse at center,#2b2e2a 0%,#202221 70%); }
+.access-brand { text-align:center; margin:65px 0 38px; }
+.access-brand>span { font-size:36px; font-weight:bold; letter-spacing:12px; }
+.access-brand p { font-size:20px; margin-top:15px; letter-spacing:2px; }
+.access-terminal { width:520px; border:2px solid #a8aa99; padding:28px 34px 24px; background:#20231f; box-shadow:8px 8px 0 #14171455; }
+.access-terminal-heading { display:flex; justify-content:space-between; margin-bottom:36px; }
+.access-terminal h1 { font-size:23px; font-weight:bold; }
+.access-terminal-heading>span { color:#7f8878; font-size:20px; }
+.access-terminal label { display:block; font-weight:bold; font-size:19px; margin:25px 0 12px; }
+.access-terminal input { display:block; width:100%; height:58px; padding:0 16px; background:#181c19; border:1px solid #a8aa99; color:#eeeade; font-family:inherit; font-size:19px; border-radius:0; }
+.access-terminal input::placeholder { color:#7e857b; }
+.access-password { position:relative; }
+.access-password input { padding-right:80px; }
+.access-password button { position:absolute; right:12px; top:19px; font-size:14px; color:#b3baa8; }
+.access-submit { width:100%; padding:18px; margin-top:32px; border:1px solid #838e77; background:#343d2e; font-weight:bold; font-size:22px; color:#e2e5d3; }
+.access-submit:hover { background:#47503e; }
+.access-submit:disabled { opacity:.6; }
+.access-remember { font-size:14px; color:#949e8b; text-align:center; margin-top:16px; }
+.access-help { display:block; margin:22px auto 0; font-size:18px; text-decoration:underline; text-underline-offset:5px; }
+.access-help-copy { font-size:15px; margin-top:15px; text-align:center; }
+.access-error { color:#e8b5a0; margin-top:16px; font-size:16px; }
+.access-status { margin-top:auto; margin-bottom:50px; width:calc(100% - 140px); font-size:18px; }
+.access-status>div { display:flex; justify-content:space-between; margin-top:10px; }
+.access-status i { display:inline-block; width:9px; height:9px; background:#b7c1a1; border-radius:50%; margin-right:8px; }
+.access-screen :focus-visible,.terminal-settings :focus-visible { outline:3px solid #d7c28f; outline-offset:4px; }
+.terminal-settings.console-modal { width:1120px; max-width:90%; padding:28px; color:#c7c4b2; }
+.terminal-settings .modal-title { margin-bottom:24px; }
+.terminal-settings .modal-title small { font-size:16px; letter-spacing:2px; opacity:.7; }
+.terminal-settings h2 { font-size:36px; margin-top:6px; }
+.settings-body { display:flex; min-height:370px; gap:24px; }
+.settings-body nav { width:220px; display:flex; flex-direction:column; gap:12px; flex-shrink:0; }
+.settings-body nav button { display:flex; align-items:center; gap:16px; padding:18px; text-align:left; }
+.terminal-settings .selected { background:#555c45; border-color:#b1b293; color:#eee8d4; box-shadow:inset 0 0 0 1px #919579; }
+.settings-terminal-id { margin-top:auto; padding:18px 4px; font-family:'Courier New',monospace; font-size:12px; line-height:1.8; color:#8d968a; }
+.settings-content { flex:1; padding:32px; color:#333b31; }
+.settings-section-code { font-family:'Courier New',monospace; font-size:13px; letter-spacing:2px; }
+.settings-content h3 { font-size:32px; margin:14px 0; font-family:'Courier New',monospace; font-weight:bold; }
+.settings-content p { font-size:17px; line-height:1.7; }
+.settings-row { display:flex; justify-content:space-between; align-items:center; gap:20px; border-top:1px solid #7e806b; padding-top:28px; margin-top:28px; }
+.settings-row strong,.settings-content legend { font-family:'Courier New',monospace; font-size:16px; font-weight:bold; }
+.settings-row p { margin-top:8px; }
+.settings-row>.console-button { min-width:82px; padding:14px 22px; }
+.settings-content fieldset { margin-top:34px; }
+.settings-ratios { display:flex; gap:18px; margin-top:16px; }
+.settings-ratios button { padding:16px 24px; }
+.settings-ratios small { display:block; font-size:13px; margin-top:6px; }
+.settings-footer { display:flex; justify-content:space-between; border-top:1px solid #616859; padding-top:24px; margin-top:24px; }
+.settings-footer button { display:flex; gap:12px; align-items:center; padding:16px 26px; }
+.settings-logout { color:#d5b8a5; }
+.settings-error { color:#efbca0; margin-top:18px; }

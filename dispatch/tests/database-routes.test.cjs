@@ -8,7 +8,7 @@ const path = require('node:path')
 // Exercise route logic with an isolated database double; never connect to real data.
 function loadRoute(relative, query, phaseProgressionEnabled = false) {
   const exports = {}
-  const source = fs.readFileSync(path.join(__dirname, '..', relative), 'utf8')
+  const source = fs.readFileSync(path.join(__dirname, '../src', relative), 'utf8')
   const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText
   vm.runInNewContext(code, {
     exports, console,

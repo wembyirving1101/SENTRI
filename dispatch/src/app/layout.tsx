@@ -4,6 +4,7 @@ import ScaleManager from '@/components/ScaleManager'
 import './globals.css'
 import './desk.css'
 import './email-investigation.css'
+import './access.css'
 
 
 export const metadata: Metadata = {
@@ -44,4 +45,3 @@ export default function RootLayout({
     </html>
   )
 }
-

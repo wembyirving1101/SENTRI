@@ -6,6 +6,7 @@ const root = path.resolve(__dirname, '..')
 module.exports = function createLoader(overrides = {}) {
   const cache = new Map()
   function load(file) {
+    if (/^(app|lib|components)\//.test(file)) file = 'src/' + file
     file = path.resolve(root, file)
     if (cache.has(file)) return cache.get(file).exports
     const module = { exports: {} }

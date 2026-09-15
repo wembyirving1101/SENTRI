@@ -848,6 +848,8 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
         onClose={() => setShowSettings(false)}
         onSaveSettings={handleSaveSettings}
         currentAspectRatio={aspectRatio}
+        isMuted={isMuted}
+        onToggleMute={toggleMute}
       />
 
       {/* Persistent Desk UI */}

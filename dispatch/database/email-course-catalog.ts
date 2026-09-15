@@ -1,7 +1,7 @@
 import {
   BEHAVIOR_WEIGHTS, PS_KNOWLEDGE_WEIGHTS, validateCase,
   type Behavior, type CourseCase, type Knowledge, type Phase,
-} from '../lib/emailCourse'
+} from '../src/lib/emailCourse'
 
 // Authored simulation fixtures for the demo company, not imported production email.
 // Each campaign is a distinct scenario. A phase has two candidates per objective:
