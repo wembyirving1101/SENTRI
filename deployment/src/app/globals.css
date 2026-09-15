@@ -114,6 +114,12 @@ input:hover,select:hover{border-color:#a3ae92}
 .login-placeholder h1{margin:18px 0}
 .login-placeholder p{line-height:1.8;color:var(--muted);margin-bottom:28px}
 .login-placeholder .text-link{display:block;margin-top:25px}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+.mode-note{font-size:11px;line-height:1.8;color:var(--accent);margin:0 0 22px}
+.form-error{border:1px solid #b98075;color:#f2c2b8;padding:14px;font-size:12px;line-height:1.7;margin-bottom:20px;overflow-wrap:anywhere}
+.login-placeholder .form-error{color:#f2c2b8}
+.demo-help{font-size:12px;overflow-wrap:anywhere}
+.demo-help strong{color:var(--ink);font-weight:normal}
 
 @media(min-width:1500px){.terminal-shell{padding-top:40px}
 .registration{margin-top:60px}
@@ -169,4 +175,3 @@ input:hover,select:hover{border-color:#a3ae92}
 .login-placeholder{margin-top:45px;padding:26px}
 .summary>div{grid-template-columns:100px 1fr}
 }
-

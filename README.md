@@ -29,8 +29,13 @@ configuration belongs in `dispatch/.env.local`. Hosting the training app should
 use `dispatch` as its project root.
 
 Run the separate deployment UI with `cd deployment` and `npm run dev`.
-It uses port 3002. The registration preview follows Company → Admin Account →
-Ready. Real account creation and admin login are not connected yet.
+It uses port 3002. Registration follows Company → Admin Account → Ready.
+Registration and admin login support temporary demo accounts or the existing
+SENTRI database, controlled by `DEPLOYMENT_AUTH_MODE` in `deployment/.env.local`.
+After login, the existing login page shows the signed-in admin; employee
+management and CSV/manual entry remain future work.
+See [deployment/AUTH_DATABASE_GUIDE.md](./deployment/AUTH_DATABASE_GUIDE.md) for
+setup, mode switching, implementation details, and tests.
 
 ## Dispatch sign-in (temporary)
 

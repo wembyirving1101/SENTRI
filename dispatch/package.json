@@ -41,5 +41,8 @@
     "overrides": {
       "hono": "4.12.25"
     }
+  },
+  "allowScripts": {
+    "sharp@0.34.5": true
   }
 }
