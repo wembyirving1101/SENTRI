@@ -5,6 +5,7 @@ import './globals.css'
 import './desk.css'
 import './email-investigation.css'
 import './access.css'
+import './chat.css'
 
 
 export const metadata: Metadata = {

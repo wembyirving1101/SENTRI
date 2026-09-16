@@ -6,14 +6,15 @@ import GameIcon from './GameIcon';
 import { useClickSound } from '@/lib/useClickSound';
 interface DeskUIProps {
     progressPercentage: number;
-    onEndDay?: () => void;
+    onDayControl?: () => void;
+    dayControlLabel?: string;
     tasksCompleted?: number;
     tasksTotal?: number;
     isMuted?: boolean;
     onToggleMute?: () => void;
     isBusy?: boolean;
 }
-export default function DeskUI({ onEndDay, tasksCompleted = 0, tasksTotal = 0, isMuted = false, onToggleMute, isBusy }: DeskUIProps) {
+export default function DeskUI({ onDayControl, dayControlLabel = 'START DAY', tasksCompleted = 0, tasksTotal = 0, isMuted = false, onToggleMute, isBusy }: DeskUIProps) {
     const playClickSound = useClickSound();
     const [modal, setModal] = useState<'handbook' | 'messages' | 'notes' | null>(null);
     const [notes, setNotes] = useState('');
@@ -51,7 +52,7 @@ export default function DeskUI({ onEndDay, tasksCompleted = 0, tasksTotal = 0, i
       <div className="desk-device end-day-device">
         <div className="device-base" aria-hidden="true"/>
         <div className="device-roof" aria-hidden="true"/>
-        <div className="device-face end-day-control metal-frame"><button className="end-day-button" onClick={() => { playClickSound(); onEndDay?.(); }} disabled={isBusy}>END DAY</button><span>{tasksCompleted}/{tasksTotal} TASKS</span><i className="device-vents" aria-hidden="true"/></div>
+        <div className="device-face end-day-control metal-frame"><button className="end-day-button" onClick={() => { playClickSound(); onDayControl?.(); }} disabled={isBusy}>{dayControlLabel}</button><span>{tasksCompleted}/{tasksTotal} TASKS</span><i className="device-vents" aria-hidden="true"/></div>
       </div>
     </footer>
     {modal && <div className="console-modal-backdrop" onClick={() => setModal(null)}><section className="console-modal metal-frame" role="dialog" aria-modal="true" aria-labelledby="desk-modal-title" onClick={event => event.stopPropagation()}><div className="modal-title"><h2 id="desk-modal-title">{modal === 'handbook' ? 'EMPLOYEE HANDBOOK' : modal.toUpperCase()}</h2><button className="console-button" aria-label="Close" onClick={() => setModal(null)}>✕</button></div>

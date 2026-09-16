@@ -1,9 +1,9 @@
 import os
-import time
-from pathlib import Path
-from ollama import chat
+import sys
+import json
+import urllib.request
 
-MODEL = "huihui_ai/qwen3-abliterated:latest"
+MODEL = os.environ.get("SENTRI_MODEL", "huihui_ai/qwen3-abliterated:latest")
 
 SYSTEM_PROMPT = """
 You are SENTRI, a chill cybersecurity guardian and workplace companion.
@@ -215,65 +215,79 @@ Always prioritize being useful, natural, and easy to talk to.
 """
 
 
-messages = [
-    {
-        "role": "system",
-        "content": SYSTEM_PROMPT
-    }
-]
-
-print("SENTRI")
-print("Cybersecurity Guardian")
-print("Type 'exit' to leave.")
-print()
-
-while True:
-    user_input = input("You: ").strip()
-
-    if user_input.lower() == "exit":
-        print("Sentri: Catch you later.")
-        break
-
-    if not user_input:
-        continue
-
-    messages.append({
-        "role": "user",
-        "content": user_input
-    })
-
-    try:
-        response = chat(
-            model=MODEL,
-            messages=messages,
-            think=False,
-            stream=True
-        )
-
-        sentri_response = ""
-
-        print("Sentri: ", end="", flush=True)
-
-        for chunk in response:
-            text = chunk["message"]["content"]
-
+def stream_reply(history):
+    """Shared streaming path for the terminal and dispatch web chat."""
+    base = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434").rstrip("/")
+    if not base.startswith(("http://", "https://")):
+        base = "http://" + base
+    payload = json.dumps({"model": MODEL, "messages": [
+        {"role": "system", "content": SYSTEM_PROMPT}, *history[-12:]
+    ], "think": False, "stream": True, "options": {"num_predict": 2048}}).encode()
+    request = urllib.request.Request(base + "/api/chat", data=payload, headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(request, timeout=180) as response:
+        for line in response:
+            if not line.strip():
+                continue
+            chunk = json.loads(line)
+            if chunk.get("error"):
+                raise RuntimeError(chunk["error"])
+            text = chunk.get("message", {}).get("content", "")
             if text:
-                print(text, end="", flush=True)
-                sentri_response += text
+                yield text
+            if chunk.get("done"):
+                return
 
-        print()
-        print()
 
-        messages.append({
-            "role": "assistant",
-            "content": sentri_response
-        })
+def web_chat():
+    def emit(value):
+        print(json.dumps(value), flush=True)
+    try:
+        payload = json.load(sys.stdin)
+        history = payload.get("messages", [])
+        if not history or len(history) > 12 or any(
+            item.get("role") not in ("user", "assistant") or
+            not isinstance(item.get("content"), str) or not 1 <= len(item["content"]) <= 12000
+            for item in history
+        ):
+            raise ValueError("Invalid chat history")
+        for token in stream_reply(history):
+            emit({"type": "token", "text": token})
+        emit({"type": "done"})
+    except Exception:
+        emit({"type": "error", "message": "SENTRI could not reach the AI. Check that Ollama is running and the configured model is installed, then try again."})
+        sys.exit(1)
 
-        # Keep the system prompt + the most recent conversation
-        # This prevents the context from getting slower and slower.
-        if len(messages) > 13:
-            messages = [messages[0]] + messages[-12:]
 
-    except Exception as e:
-        print(f"\nSentri: Couldn't reach my brain right now. {e}")
-        print()
+def terminal_chat():
+    history = []
+    print("SENTRI\nCybersecurity Guardian\nType 'exit' to leave.\n")
+    while True:
+        try:
+            user_input = input("You: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            return
+        if user_input.lower() == "exit":
+            print("Sentri: Catch you later.")
+            return
+        if not user_input:
+            continue
+        history.append({"role": "user", "content": user_input})
+        try:
+            print("Sentri: ", end="", flush=True)
+            answer = ""
+            for token in stream_reply(history):
+                print(token, end="", flush=True)
+                answer += token
+            print("\n")
+            history.append({"role": "assistant", "content": answer})
+            history = history[-12:]
+        except Exception as error:
+            history.pop()
+            print(f"\nSentri: Couldn't reach my brain right now. {error}\n")
+
+
+if __name__ == "__main__":
+    if "--json" in sys.argv:
+        web_chat()
+    else:
+        terminal_chat()

@@ -16,6 +16,7 @@ import Header from '@/components/Header'
 import CompanyCard from '@/components/CompanyCard'
 import TasksPanel from '@/components/TasksPanel'
 import SentriPanel from '@/components/SentriPanel'
+import SentriChat from '@/components/SentriChat'
 import GameIcon from '@/components/GameIcon'
 import DispatchQueueView from '@/components/DispatchQueueView'
 import TaskDetailsPanel from '@/components/TaskDetailsPanel'
@@ -88,7 +89,12 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
   const [checkedPasswordCharacteristics, setCheckedPasswordCharacteristics] = useState<Set<string>>(new Set())
   const [showHelp, setShowHelp] = useState(false)
   useDialogFocus(showHelp, () => setShowHelp(false))
-  const [isLoadingTask, setIsLoadingTask] = useState(!designPreview)
+  const [isLoadingTask, setIsLoadingTask] = useState(false)
+  const [dayMode, setDayMode] = useState<'not-started' | 'running' | 'paused'>('not-started')
+  const dayModeRef = useRef(dayMode)
+  const [dayLoaded, setDayLoaded] = useState(false)
+  const [showChat, setShowChat] = useState(false)
+  const nextGenerationAt = useRef(0)
   const [investigationList, setInvestigationList] = useState<InvestigationCategory[]>([
     { id: 'profile', label: 'Profile', description: 'Verify sender identity and domain legitimacy', checked: false, hasEvidence: true },
     { id: 'link', label: 'Link', description: 'Analyze URLs and check for suspicious redirects', checked: false, hasEvidence: true },
@@ -122,6 +128,31 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
   const performanceRef = useRef(investigationPerformance)
   performanceRef.current = investigationPerformance
   const knownAssignmentsRef = useRef<Set<string>>(new Set())
+
+  // Refresh pauses the day and preserves outstanding work, so chat cannot bypass it.
+  useEffect(() => {
+    if (!designPreview) {
+      try {
+        const raw = sessionStorage.getItem(`sentri-day-v1-${demoUserCode}`)
+        if (raw) {
+          const saved = JSON.parse(raw)
+          if (Array.isArray(saved.queue) && saved.queue.every((item: DispatchItem) => item && typeof item.id === 'string' && ['email', 'password', 'data-classification'].includes(item.type) && item.payload)) {
+            setGameState(prev => ({ ...prev, dispatchQueue: saved.queue, tasksGeneratedToday: Number(saved.generated) || 0, todaysTasksCompleted: Number(saved.completed) || 0 }))
+            saved.queue.forEach((item: DispatchItem) => { if (item.assignmentId) knownAssignmentsRef.current.add(item.assignmentId) })
+            const mode = saved.started || saved.queue.length ? 'paused' : 'not-started'
+            dayModeRef.current = mode; setDayMode(mode)
+          }
+        }
+      } catch { /* Keep a fresh day if session storage is unavailable. */ }
+    }
+    setDayLoaded(true)
+  }, [demoUserCode, designPreview])
+  useEffect(() => {
+    if (!dayLoaded || designPreview) return
+    try { sessionStorage.setItem(`sentri-day-v1-${demoUserCode}`, JSON.stringify({ started: dayMode !== 'not-started', queue: gameState.dispatchQueue, generated: gameState.tasksGeneratedToday, completed: gameState.todaysTasksCompleted })) } catch { /* Storage is optional. */ }
+  }, [dayLoaded, dayMode, gameState.dispatchQueue, gameState.tasksGeneratedToday, gameState.todaysTasksCompleted, demoUserCode, designPreview])
+  const chatAvailable = dayLoaded && dayMode !== 'running' && gameState.dispatchQueue.length === 0 && !isLoadingTask && !connectionError && !emailCourse.busy
+  useEffect(() => { if (!chatAvailable) setShowChat(false) }, [chatAvailable])
 
   // Course assignments join the existing dispatch queue; the desk and other task
   // panels retain their normal flow. One live email assignment exists at a time.
@@ -265,12 +296,12 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
 
   // Keep tasks arriving while the player works, up to 20 per day.
   useEffect(() => {
-    if (designPreview) return
+    if (designPreview || !dayLoaded) return
     let cancelled = false
     let timer: ReturnType<typeof setTimeout>
     const generate = async () => {
       if (cancelled) return
-      if (!generationRef.current && gameStateRef.current.tasksGeneratedToday < 20 &&
+      if (dayModeRef.current === 'running' && Date.now() >= nextGenerationAt.current && !generationRef.current && gameStateRef.current.tasksGeneratedToday < 20 &&
           (!progressionEnabled || gameStateRef.current.dispatchQueue.filter(item => item.type !== 'email').length < 2)) {
         generationRef.current = true
         try {
@@ -295,13 +326,13 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
             playTaskNotificationSound()
           }
         } catch { /* Keep the queue usable and retry on the next interval. */ }
-        finally { generationRef.current = false }
+        finally { generationRef.current = false; nextGenerationAt.current = Date.now() + getRandomDelay() }
       }
-      if (!cancelled) timer = setTimeout(generate, getRandomDelay())
+      if (!cancelled) timer = setTimeout(generate, 500)
     }
     void generate()
     return () => { cancelled = true; clearTimeout(timer) }
-  }, [designPreview, progressionEnabled])
+  }, [designPreview, progressionEnabled, dayLoaded])
 
   const completeQueuedTask = (id: string | null) => {
     databaseExhaustedRef.current = false
@@ -609,52 +640,15 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
     setShowDispatchQueue(false)
   }
 
-  const handleEndDay = async () => {
-    if (generationRef.current || gameState.dispatchQueue.length > 0) return
-    console.log('[v0] End Day triggered')
-    
-    // Reset daily state while preserving graduation progress
-    setGameState((prev) => ({
-      ...prev,
-      day: prev.day + 1,
-      todaysTasksCompleted: 0,
-      tasksGeneratedToday: 0,
-      dispatchQueue: [],
-      currentTaskType: 'email',
-      currentEmailId: null,
-      currentPasswordId: null,
-      currentDocumentId: null,
-      investigatedCategories: new Set(),
-      decision: null,
-    }))
-    
-    usedIncidentsRef.current.clear()
-    demoScenarioIndexRef.current = 0
-    setInvestigationPerformance(createInitialInvestigationPerformance())
-    setNotificationCount(0)
-    
-    // Reset investigation list
-    setInvestigationList((prev) =>
-      prev.map((item) => ({
-        ...item,
-        checked: false,
-      }))
-    )
-    
-    // Reset other state
-    setShowFeedback(false)
-    setShowDecisionModal(false)
-    setLastDecision(null)
-    setShowPasswordFeedback(false)
-    setLastPasswordDecision(null)
-    setShowDataClassificationFeedback(false)
-    setLastDataClassificationDecision(null)
-    setCheckedPasswordCharacteristics(new Set())
-    
-    console.log('[v0] New day started')
-    setEmailAttempt(0)
-    setLastEmailAttemptNumber(0)
-    setLastEmailCorrect(false)
+  const handleDayControl = () => {
+    const next = dayModeRef.current === 'running' ? 'paused' : 'running'
+    dayModeRef.current = next
+    setDayMode(next)
+    if (next === 'running') {
+      setShowChat(false)
+      nextGenerationAt.current = 0
+      databaseExhaustedRef.current = false
+    }
   }
 
   return (
@@ -692,7 +686,7 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
           <button onClick={() => setShowDispatchQueue(true)} className={`view-queue-button metal-frame ${showDispatchQueue ? 'is-active' : ''}`} aria-current={showDispatchQueue ? 'page' : undefined}>
             <GameIcon name="file" size={32} /><span>VIEW QUEUE</span><span>{gameState.dispatchQueue.length}</span>
           </button>
-          <SentriPanel isQueueOpen={showDispatchQueue} courseStatus={emailCourse.course?.status} courseMessage={emailCourse.course?.message} onResumeCourse={() => void emailCourse.send({ action: 'resume' })} />
+          <SentriPanel onOpenChat={() => setShowChat(true)} chatAvailable={chatAvailable} chatHint={!dayLoaded ? "Loading your day…" : dayMode === "running" ? "Pause the day to chat with SENTRI." : isLoadingTask ? "Waiting for the current assignment…" : gameState.dispatchQueue.length ? "Finish queued tasks to unlock chat." : connectionError ? "Resolve the connection error to unlock chat." : "Click to chat with SENTRI."} isQueueOpen={showDispatchQueue} courseStatus={emailCourse.course?.status} courseMessage={emailCourse.course?.message} onResumeCourse={() => void emailCourse.send({ action: 'resume' })} />
         </div>
 
         {/* Center Content - Task-specific UI or Dispatch Queue */}
@@ -852,13 +846,16 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
         onToggleMute={toggleMute}
       />
 
+      <SentriChat open={showChat && chatAvailable} onClose={() => setShowChat(false)} paused={dayMode === "paused"} />
+
       {/* Persistent Desk UI */}
       <DeskUI 
         progressPercentage={gameState.graduationProgress} 
-        onEndDay={handleEndDay}
+        onDayControl={handleDayControl}
+        dayControlLabel={dayMode === "not-started" ? "START DAY" : dayMode === "running" ? "PAUSE DAY" : "RESUME DAY"}
         tasksCompleted={gameState.todaysTasksCompleted}
         tasksTotal={gameState.todaysTasksCompleted + gameState.dispatchQueue.length}
-        isBusy={isLoadingTask}
+        isBusy={!dayLoaded}
         isMuted={isMuted}
         onToggleMute={toggleMute}
       />
