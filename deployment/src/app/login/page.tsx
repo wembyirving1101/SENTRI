@@ -6,9 +6,6 @@ import TerminalShell from '@/components/TerminalShell'
 import { authRequest, useAdminSession, type SessionView } from '@/lib/auth-api'
 
 export default function Login() {
-<<<<<<< Updated upstream
-  return <TerminalShell title="ADMIN ACCESS"><section className="login-placeholder panel"><span className="eyebrow">ADMIN TERMINAL</span><h1>Your control center</h1><p>Explore the admin panel with sample employees. Sign-in and company accounts are not connected yet.</p><Link className="button primary" href="/admin">[ OPEN ADMIN PREVIEW → ]</Link><Link className="text-link" href="/register">Register a company →</Link><Link className="text-link" href="/">← Back to start</Link></section></TerminalShell>
-=======
   const { session, setSession, error: sessionError } = useAdminSession()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -39,7 +36,8 @@ export default function Login() {
     {(error || sessionError) && <p className="form-error" role="alert">{error || sessionError}</p>}
     {session?.admin ? <div>
       <div role="status"><h2>Welcome, {session.admin.name}.</h2><p>You are signed in as administrator for {session.admin.company}.</p></div>
-      <p>Employee management is coming next. CSV upload and manual employee entry are not available yet.</p>
+      <p>Employee management is available as a local preview. Invitations are simulated.</p>
+      <Link className="button primary" href="/admin">[ OPEN ADMIN PREVIEW → ]</Link>
       <button className="button" disabled={busy} onClick={logout}>{busy ? '[ SIGNING OUT… ]' : '[ SIGN OUT ]'}</button>
     </div> : <>
       {session?.demoCredentials && <p className="demo-help">Try the demo account:<br /><strong>{session.demoCredentials.email}</strong><br />Password: <strong>{session.demoCredentials.password}</strong><br />Or sign in with an account you registered in this demo.</p>}
@@ -52,5 +50,4 @@ export default function Login() {
     </>}
     <Link className="text-link" href="/">← Back to start</Link>
   </section></TerminalShell>
->>>>>>> Stashed changes
 }
