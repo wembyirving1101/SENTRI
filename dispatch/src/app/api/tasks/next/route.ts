@@ -1,3 +1,4 @@
+import { currentPlayer } from '@/lib/player-auth'
 import { NextResponse } from 'next/server'
 import { isDatabaseConfigured, withTransaction } from '@/lib/db'
 import { TRAINING_CONFIG, regularTaskType } from '@/lib/trainingConfig'
@@ -47,11 +48,14 @@ function toDispatchItem(
 }
 
 export async function POST(request: Request) {
+  const player = await currentPlayer()
+  if (!player) return NextResponse.json({ error: 'Please sign in.' }, { status: 401 })
   if (!isDatabaseConfigured()) {
     return NextResponse.json({ error: 'DATABASE_URL is not configured' }, { status: 503 })
   }
 
   const body = (await request.json()) as NextTaskRequest
+  body.userCode = player.userCode
   if (!body.userCode) {
     return NextResponse.json({ error: 'userCode is required' }, { status: 400 })
   }

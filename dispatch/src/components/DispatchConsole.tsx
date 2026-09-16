@@ -46,13 +46,13 @@ const previewQueue: DispatchItem[] = [
   { id: 'preview-document', type: 'data-classification', priority: 'MEDIUM', timestamp: 0, payload: { ...mockDataClassifications[0], id: 'preview-document', timestamp: '09:00' } },
 ]
 
-export default function DispatchConsole({ designPreview = false }: { designPreview?: boolean }) {
+export default function DispatchConsole({ designPreview = false, player }: { designPreview?: boolean; player?: import('@/lib/player-auth').Player }) {
   const progressionEnabled = TRAINING_CONFIG.phaseProgressionEnabled && !designPreview
   const emailCourse = useEmailCourse(progressionEnabled)
   const courseRef = useRef(emailCourse.course)
   courseRef.current = emailCourse.course
   const [courseEvidence, setCourseEvidence] = useState<string[]>([])
-  const demoUserCode = process.env.NEXT_PUBLIC_DEMO_USER_CODE ?? 'usr_0001'
+  const demoUserCode = player?.userCode ?? 'design-preview'
   const [connectionError, setConnectionError] = useState<string | null>(null)
   const savingRef = useRef(false)
   const pendingSave = useRef<Promise<unknown>>(Promise.resolve())
@@ -673,8 +673,8 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
         {/* Left Sidebar - Fixed 320px width */}
         <div className="console-sidebar">
           <CompanyCard 
-            companyName="KAHFUNG INDUSTRIES"
-            department="OPERATIONS"
+            companyName={player?.company ?? "SENTRI"}
+            department={player?.department ?? "TRAINING"}
             role="Associate"
           />
           <TasksPanel 
@@ -838,6 +838,8 @@ export default function DispatchConsole({ designPreview = false }: { designPrevi
 
       {/* Settings Modal */}
       <SettingsModal
+        accountName={player?.name}
+        accountEmail={player?.email}
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
         onSaveSettings={handleSaveSettings}

@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { SESSION_COOKIE, validSession } from '@/lib/auth'
+import { SESSION_COOKIE } from '@/lib/auth'
+import { playerForToken } from '@/lib/player-auth'
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname
-  const authenticated = validSession(request.cookies.get(SESSION_COOKIE)?.value)
   if (path === '/api/auth') return NextResponse.next()
+  let authenticated
+  try { authenticated = await playerForToken(request.cookies.get(SESSION_COOKIE)?.value) }
+  catch { return NextResponse.json({error:'Account service is unavailable. Please try again.'},{status:503}) }
+  if (request.method !== 'GET' && request.method !== 'HEAD' && request.headers.get('origin') !== request.nextUrl.origin) return NextResponse.json({error:'Invalid request origin.'},{status:403})
   if (path === '/login') {
     return authenticated ? NextResponse.redirect(new URL('/', request.url)) : NextResponse.next()
   }

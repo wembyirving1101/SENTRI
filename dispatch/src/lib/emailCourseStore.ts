@@ -23,13 +23,7 @@ export function validateCommand(value: unknown): asserts value is CourseCommand 
   throw new CourseError('Invalid course request')
 }
 
-// This app currently has one demo identity, not a login/session system. Resolve it
-// on the server; never accept a user ID or company ID from a course submission.
-export function courseUserCode() {
-  return process.env.DEMO_USER_CODE ?? process.env.NEXT_PUBLIC_DEMO_USER_CODE ?? 'usr_0001'
-}
-
-export async function executeCourseCommand(command: CourseCommand) {
+export async function executeCourseCommand(command: CourseCommand, userCode: string) {
   validateCommand(command)
   return withTransaction(async client => {
     const playerResult = await client.query<{
@@ -40,7 +34,7 @@ export async function executeCourseCommand(command: CourseCommand) {
           FROM users u JOIN employees e USING(employee_id)
           JOIN departments d USING(department_id) JOIN companies c USING(company_id)
           LEFT JOIN ranks r USING(rank_id)
-         WHERE u.user_code = $1 FOR UPDATE OF u`, [courseUserCode()])
+         WHERE u.user_code = $1 FOR UPDATE OF u`, [userCode])
     const player = playerResult.rows[0]
     if (!player) throw new CourseError('The configured learner account was not found.', 404)
 

@@ -7,9 +7,10 @@
     "build": "next build",
     "start": "next start --port 3002",
     "typecheck": "tsc --noEmit",
-    "test": "node --test tests/auth.test.cjs",
+    "test": "node --test tests/auth.test.cjs tests/employees.test.cjs tests/employee-accounts.test.cjs",
     "db:check": "node scripts/check-database.cjs",
-    "test:database": "node --test tests/database.test.cjs"
+    "test:database": "node --test tests/database.test.cjs",
+    "db:employees": "node scripts/setup-employee-accounts.cjs"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

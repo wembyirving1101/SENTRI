@@ -66,7 +66,8 @@ test('PostgreSQL course transactions: resume, concurrency, replay, rollback, own
     } })
     const { STARTER_CATALOG: catalog } = load('database/email-course-catalog.ts')
     const rules = load('lib/emailCourse.ts')
-    const { executeCourseCommand: command } = load('lib/emailCourseStore.ts')
+    const { executeCourseCommand } = load('lib/emailCourseStore.ts')
+    const command = input => executeCourseCommand(input, 'course-test-learner')
     for (const c of catalog) await setup.query('INSERT INTO email_course_cases(case_key, company_id, review_status, scoring_version, content) VALUES($1,1,$2,$3,$4)', [c.id, 'approved', rules.SCORING_VERSION, c])
     // A mismatched-company case must not be selected even when approved.
     const otherCase = structuredClone(catalog[0]); otherCase.id = 'foreign'; otherCase.campaignId = 'foreign'

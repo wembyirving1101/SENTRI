@@ -11,6 +11,7 @@ export const sampleEmployees: Employee[] = [
 ]
 export function employeeError(employee: Employee, existing: Employee[]) {
   if (![employee.name, employee.email, employee.employeeId, employee.department, employee.title].every(value => value.trim())) return 'Complete all required fields.'
+  if (employee.name.length > 120 || employee.email.length > 150 || employee.employeeId.length > 80 || employee.department.length > 100 || employee.title.length > 100) return 'A field exceeds its allowed length (name 120, email 150, employee ID 80, department/title 100).'
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(employee.email)) return 'Enter a valid work email.'
   if (!['Staff', 'Manager', 'Executive'].includes(employee.rank)) return 'Rank must be Staff, Manager, or Executive.'
   if (existing.some(item => item.id !== employee.id && item.email.toLowerCase() === employee.email.toLowerCase())) return 'This work email already exists.'

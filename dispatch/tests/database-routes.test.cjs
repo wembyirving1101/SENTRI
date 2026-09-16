@@ -14,6 +14,7 @@ function loadRoute(relative, query, phaseProgressionEnabled = false) {
     exports, console,
     require: (name) => {
       if (name === 'next/server') return { NextResponse: { json: (body, options) => ({ body, status: options?.status ?? 200 }) } }
+      if (name === '@/lib/player-auth') return { currentPlayer: async () => ({userId:'1',userCode:'test-user'}) }
       if (name === '@/lib/db') return { isDatabaseConfigured: () => true, withTransaction: (fn) => fn({ query }) }
       if (name === '@/lib/trainingConfig') return {
         TRAINING_CONFIG: { phaseProgressionEnabled },

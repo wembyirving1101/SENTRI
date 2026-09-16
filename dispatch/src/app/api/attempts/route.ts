@@ -1,3 +1,4 @@
+import { currentPlayer } from '@/lib/player-auth'
 import { NextResponse } from 'next/server'
 import { isDatabaseConfigured, withTransaction } from '@/lib/db'
 import { TRAINING_CONFIG } from '@/lib/trainingConfig'
@@ -22,6 +23,8 @@ interface AttemptContext {
 }
 
 export async function POST(request: Request) {
+  const player = await currentPlayer()
+  if (!player) return NextResponse.json({ error: 'Please sign in.' }, { status: 401 })
   if (!isDatabaseConfigured()) {
     return NextResponse.json({ error: 'DATABASE_URL is not configured' }, { status: 503 })
   }
@@ -48,9 +51,9 @@ export async function POST(request: Request) {
            JOIN cases c ON c.case_id = ta.case_id
            JOIN tasks t ON t.task_id = c.task_id
            JOIN incident_types it ON it.incident_type_id = t.incident_type_id
-          WHERE a.attempt_id = $1 AND a.completed_at IS NULL
+          WHERE a.attempt_id = $1 AND ta.user_id = $2 AND a.completed_at IS NULL
           FOR UPDATE`,
-        [body.attemptId],
+        [body.attemptId, player.userId],
       )
       const context = contextResult.rows[0]
       if (!context) return null

@@ -4,6 +4,7 @@ const projectRoot = fileURLToPath(new URL('.', import.meta.url))
 const nextConfig = {
   turbopack: { root: projectRoot },
   outputFileTracingRoot: projectRoot,
+  outputFileTracingIncludes: { '/api/chat': ['./py/sentri.py'] },
   typescript: {
     ignoreBuildErrors: false,
   },

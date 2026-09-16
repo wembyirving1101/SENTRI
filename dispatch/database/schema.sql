@@ -43,6 +43,7 @@ CREATE TABLE ranks (
 CREATE TABLE employees (
     employee_id SERIAL PRIMARY KEY,
     employee_code VARCHAR(50) NOT NULL UNIQUE,
+    personnel_number VARCHAR(80),
     department_id INT NOT NULL REFERENCES departments(department_id),
     rank_id INT REFERENCES ranks(rank_id),
     full_name VARCHAR(150) NOT NULL,
@@ -59,6 +60,7 @@ CREATE TABLE users (
     username VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(150) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
+    auth_version INTEGER NOT NULL DEFAULT 0,
     role VARCHAR(30) NOT NULL DEFAULT 'player'
         CHECK (role IN ('player', 'trainer', 'admin')),
     skipped_placement BOOLEAN NOT NULL DEFAULT false,

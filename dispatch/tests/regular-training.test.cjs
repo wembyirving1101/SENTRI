@@ -14,6 +14,7 @@ test('regular practice is enabled and generation is exactly 70/20/10 per cycle',
 for (const attempt of [1, 2, 3, 4]) test(`regular email scoring accepts submission ${attempt} without a phase gate`, async () => {
   let delta
   const load = createLoader({
+    '@/lib/player-auth': { currentPlayer: async () => ({userId:'1',userCode:'test-user'}) },
     'next/server': { NextResponse: { json: (body, options) => ({ body, status: options?.status ?? 200 }) } },
     '@/lib/db': { isDatabaseConfigured: () => true, withTransaction: work => work({ query: async (sql, values) => {
       if (sql.includes('SELECT a.attempt_id')) return { rows: [{ attempt_id: '1', assignment_id: '1', user_id: 1,
@@ -33,6 +34,7 @@ for (const attempt of [1, 2, 3, 4]) test(`regular email scoring accepts submissi
 
 test('the retained course API does not advance enrollments while disabled', async () => {
   const load = createLoader({
+    '@/lib/player-auth': { currentPlayer: async () => ({userId:'1',userCode:'test-user'}) },
     'next/server': { NextResponse: { json: (body, options) => ({ body, status: options?.status ?? 200 }) } },
     '@/lib/db': { isDatabaseConfigured: () => { throw new Error('Should not access the database') } },
     '@/lib/emailCourseStore': { executeCourseCommand: () => { throw new Error('Should not advance a course') } },

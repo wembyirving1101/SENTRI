@@ -1,3 +1,4 @@
+import { currentPlayer } from '@/lib/player-auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { isDatabaseConfigured, queryOne } from '@/lib/db'
 
@@ -12,11 +13,13 @@ interface ProfileRow {
 }
 
 export async function GET(request: NextRequest) {
+  const player = await currentPlayer()
+  if (!player) return NextResponse.json({ error: 'Please sign in.' }, { status: 401 })
   if (!isDatabaseConfigured()) {
     return NextResponse.json({ error: 'DATABASE_URL is not configured' }, { status: 503 })
   }
 
-  const userCode = request.nextUrl.searchParams.get('userCode')
+  const userCode = player.userCode
   if (!userCode) {
     return NextResponse.json({ error: 'userCode is required' }, { status: 400 })
   }
